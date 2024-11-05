@@ -1,14 +1,12 @@
-use core::str;
+// Modules
+mod error;
+mod scanner;
+mod token;
+// Imports
+use error::LoxError;
+use scanner::Scanner;
 use std::env::args;
 use std::io::{self, Write};
-
-struct Lox {
-    pub had_error: bool,
-}
-
-impl Lox {
-    pub fn error(&mut self, line: usize, message: String) {}
-}
 
 fn main() {
     let args: Vec<String> = args().collect();
@@ -24,34 +22,33 @@ fn main() {
 }
 
 fn run_file(path: &String) -> io::Result<()> {
-    let buffer = std::fs::read_to_string(path)?;
-    run(buffer.as_str());
-    Ok(())
+    let source = std::fs::read_to_string(path)?;
+    match run(source) {
+        Ok(_) => Ok(()),
+        Err(err) => {
+            err.report("");
+            std::process::exit(65)
+        }
+    }
 }
 
 fn run_prompt() {
     loop {
-        print!(">> ");
+        print!("> ");
         let mut line = String::new();
         let _ = io::stdout().flush();
         io::stdin().read_line(&mut line).unwrap();
-        run(&line);
+        let _ = run(line);
     }
-    // print!(">> ");
-    // let stdin = io::stdin();
-    // for line in stdin.lock().lines().map_while(Result::ok) {
-    //     if line.is_empty() {
-    //         break;
-    //     }
-    //     run(line.as_str());
-    // }
 }
-fn run(source: &str) {
+fn run(source: String) -> Result<(), LoxError> {
     // Lexical Analysis
-    let scanner = Scanner::new(source);
-    let tokens = scanner.scan_tokens();
+    let mut scanner = Scanner::new(source);
+    let tokens = scanner.scan_tokens()?;
 
     for token in tokens {
         println!("{:?}", token);
     }
+
+    Ok(())
 }
