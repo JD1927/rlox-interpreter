@@ -5,13 +5,13 @@ pub struct LoxError {
 }
 
 impl LoxError {
-    pub fn new(line: usize, message: String) -> LoxError {
+    pub fn error(line: usize, message: String) -> LoxError {
         LoxError { line, message }
     }
     pub fn report(&self, location: &str) {
         let error = format!(
-            "[line {}] - Error {}: {}",
-            self.line, location, self.message
+            "[line {}] - Error: {} => at column {}",
+            self.line, self.message, location
         );
         eprintln!("{}", error)
     }
