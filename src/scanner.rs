@@ -22,7 +22,10 @@ impl Scanner {
     pub fn scan_tokens(&mut self) -> Result<Vec<Token>, LoxError> {
         while !self.is_at_end() {
             self.start = self.current;
-            self.scan_token();
+            match self.scan_token() {
+                Ok(_) => {}
+                Err(e) => e.report(&self.current.to_string()),
+            }
         }
 
         self.tokens.push(Token::new(
@@ -34,7 +37,7 @@ impl Scanner {
         Ok(self.tokens.clone())
     }
 
-    fn scan_token(&mut self) {
+    fn scan_token(&mut self) -> Result<(), LoxError> {
         let _char = self.advance();
 
         match _char {
@@ -88,9 +91,24 @@ impl Scanner {
             }
             ' ' | '\r' | '\t' => {}
             '\n' => self.line += 1,
-            '"' => self.add_string(),
-            _ => todo!(),
+            '"' => match self.add_string() {
+                Ok(_) => {}
+                Err(e) => return Err(e),
+            },
+            _ => {
+                if _char.is_ascii_digit() {
+                    self.add_number();
+                } else if _char.is_ascii_alphanumeric() {
+                    self.add_identifier();
+                } else {
+                    return Err(LoxError::error(
+                        self.line,
+                        "Unexpected character.".to_string(),
+                    ));
+                }
+            }
         }
+        Ok(())
     }
 
     fn is_at_end(&self) -> bool {
@@ -112,6 +130,13 @@ impl Scanner {
         match self.is_at_end() {
             true => '\0',
             false => self.source[self.current],
+        }
+    }
+
+    fn peek_next(&self) -> char {
+        match self.current + 1 >= self.source.len() {
+            true => '\0',
+            false => self.source[self.current + 1],
         }
     }
 
@@ -141,7 +166,7 @@ impl Scanner {
         ));
     }
 
-    fn add_string(&mut self) {
+    fn add_string(&mut self) -> Result<(), LoxError> {
         while self.peek() != '"' && !self.is_at_end() {
             if self.peek() == '\n' {
                 self.line += 1;
@@ -150,7 +175,73 @@ impl Scanner {
         }
 
         if self.is_at_end() {
-            LoxError::new(self.line, "Unterminated string.".to_string()).report("");
+            return Err(LoxError::error(
+                self.line,
+                "Unterminated string.".to_string(),
+            ));
+        }
+        // The closing quote "
+        self.advance();
+        // Trim the surrounding quotes.
+        let value = &self.source[self.start + 1..self.current - 1];
+        self.add_token_literal(
+            TokenType::String,
+            LiteralType::String(String::from_iter(value)),
+        );
+        Ok(())
+    }
+
+    fn add_number(&mut self) {
+        while self.peek().is_ascii_digit() {
+            self.advance();
+        }
+        // Look for a fractional part.
+        if self.peek() == '.' && self.peek_next().is_ascii_digit() {
+            // Consume the "."
+            self.advance();
+            while self.peek().is_ascii_digit() {
+                self.advance();
+            }
+        }
+        let value: f64 = String::from_iter(&self.source[self.start..self.current])
+            .parse::<f64>()
+            .unwrap();
+        self.add_token_literal(TokenType::Number, LiteralType::Number(value));
+    }
+
+    fn add_identifier(&mut self) {
+        while self.peek().is_ascii_alphanumeric() || self.peek() == '_' {
+            self.advance();
+        }
+
+        let value = &self.source[self.start..self.current];
+        let token_type = self.get_keyword(&String::from_iter(value));
+
+        match token_type {
+            Some(t_type) => self.add_token(t_type),
+            None => self.add_token(TokenType::Identifier),
+        }
+    }
+
+    fn get_keyword(&self, word: &str) -> Option<TokenType> {
+        match word {
+            "and" => Some(TokenType::And),
+            "class" => Some(TokenType::Class),
+            "else" => Some(TokenType::Else),
+            "false" => Some(TokenType::False),
+            "for" => Some(TokenType::For),
+            "fun" => Some(TokenType::Fun),
+            "if" => Some(TokenType::If),
+            "nil" => Some(TokenType::Nil),
+            "or" => Some(TokenType::Or),
+            "print" => Some(TokenType::Print),
+            "return" => Some(TokenType::Return),
+            "super" => Some(TokenType::Super),
+            "this" => Some(TokenType::This),
+            "true" => Some(TokenType::True),
+            "var" => Some(TokenType::Var),
+            "while" => Some(TokenType::While),
+            _ => None,
         }
     }
 }
