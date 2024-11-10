@@ -21,14 +21,11 @@ fn main() {
     }
 }
 
-fn run_file(path: &String) -> io::Result<()> {
+fn run_file(path: &str) -> io::Result<()> {
     let source = std::fs::read_to_string(path)?;
     match run(source) {
         Ok(_) => Ok(()),
-        Err(err) => {
-            err.report("");
-            std::process::exit(65)
-        }
+        Err(_) => std::process::exit(65),
     }
 }
 

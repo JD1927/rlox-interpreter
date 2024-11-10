@@ -98,13 +98,10 @@ impl Scanner {
             _ => {
                 if _char.is_ascii_digit() {
                     self.add_number();
-                } else if _char.is_ascii_alphanumeric() {
+                } else if self.is_alphanumeric() {
                     self.add_identifier();
                 } else {
-                    return Err(LoxError::error(
-                        self.line,
-                        "Unexpected character.".to_string(),
-                    ));
+                    return Err(LoxError::error(self.line, "Unexpected character."));
                 }
             }
         }
@@ -175,19 +172,16 @@ impl Scanner {
         }
 
         if self.is_at_end() {
-            return Err(LoxError::error(
-                self.line,
-                "Unterminated string.".to_string(),
-            ));
+            return Err(LoxError::error(self.line, "Unterminated string."));
         }
         // The closing quote "
         self.advance();
         // Trim the surrounding quotes.
-        let value = &self.source[self.start + 1..self.current - 1];
-        self.add_token_literal(
-            TokenType::String,
-            LiteralType::String(String::from_iter(value)),
-        );
+        // TODO: Handle escape sequence
+        let value: String = self.source[self.start + 1..self.current - 1]
+            .iter()
+            .collect();
+        self.add_token_literal(TokenType::String, LiteralType::String(value));
         Ok(())
     }
 
@@ -210,17 +204,25 @@ impl Scanner {
     }
 
     fn add_identifier(&mut self) {
-        while self.peek().is_ascii_alphanumeric() || self.peek() == '_' {
+        while self.is_alphanumeric() {
             self.advance();
         }
 
-        let value = &self.source[self.start..self.current];
-        let token_type = self.get_keyword(&String::from_iter(value));
+        let value: String = self.source[self.start..self.current].iter().collect();
+        let token_type = self.get_keyword(&value);
 
         match token_type {
-            Some(t_type) => self.add_token(t_type),
-            None => self.add_token(TokenType::Identifier),
+            Some(t_type) => match t_type {
+                TokenType::True => self.add_token_literal(t_type, LiteralType::Bool(true)),
+                TokenType::False => self.add_token_literal(t_type, LiteralType::Bool(false)),
+                _ => self.add_token(t_type),
+            },
+            None => self.add_token_literal(TokenType::Identifier, LiteralType::String(value)),
         }
+    }
+
+    fn is_alphanumeric(&self) -> bool {
+        self.peek().is_ascii_alphanumeric() || self.peek() == '_'
     }
 
     fn get_keyword(&self, word: &str) -> Option<TokenType> {
