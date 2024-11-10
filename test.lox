@@ -4,3 +4,10 @@
 "my wonderful string"
 9a10
 9.10230
+/************************
+/*
+This is */
+a multiline 
+block
+comment
+*****************************/

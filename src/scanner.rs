@@ -85,6 +85,9 @@ impl Scanner {
                     while self.peek() != '\n' && !self.is_at_end() {
                         self.advance();
                     }
+                } else if self.match_next_with('*') {
+                    // Block comment start
+                    self.scan_block_comment()?
                 } else {
                     self.add_token(TokenType::Slash);
                 }
@@ -113,14 +116,28 @@ impl Scanner {
     }
 
     fn match_next_with(&mut self, expected: char) -> bool {
-        if self.is_at_end() {
-            return false;
-        }
-        if self.source[self.current] != expected {
+        if self.is_at_end() || self.source[self.current] != expected {
             return false;
         }
         self.current += 1;
         true
+    }
+
+    fn scan_block_comment(&mut self) -> Result<(), LoxError> {
+        while !self.is_at_end() {
+            if self.match_next_with('*') && self.match_next_with('/') {
+                // End of current block comment */
+                return Ok(());
+            } else if self.match_next_with('/') && self.match_next_with('*') {
+                // Found nested block comment */,
+                self.scan_block_comment()?;
+            } else if self.advance() == '\n' {
+                // Advances with the next char
+                self.line += 1;
+            }
+        }
+        // Unclosed block comment error
+        Err(LoxError::error(self.line, "Unterminated block comment."))
     }
 
     fn peek(&self) -> char {
