@@ -6,6 +6,7 @@ pub struct Scanner {
     start: usize,
     current: usize,
     line: usize,
+    column: usize,
 }
 
 impl Scanner {
@@ -16,6 +17,7 @@ impl Scanner {
             start: 0,
             current: 0,
             line: 1,
+            column: 0,
         }
     }
 
@@ -24,7 +26,7 @@ impl Scanner {
             self.start = self.current;
             match self.scan_token() {
                 Ok(_) => {}
-                Err(e) => e.report(&self.current.to_string()),
+                Err(e) => e.report(&self.column.to_string()),
             }
         }
 
@@ -93,7 +95,10 @@ impl Scanner {
                 }
             }
             ' ' | '\r' | '\t' => {}
-            '\n' => self.line += 1,
+            '\n' => {
+                self.line += 1;
+                self.column = 0;
+            }
             '"' => match self.add_string() {
                 Ok(_) => {}
                 Err(e) => return Err(e),
@@ -120,6 +125,7 @@ impl Scanner {
             return false;
         }
         self.current += 1;
+        self.column += 1;
         true
     }
 
@@ -134,6 +140,7 @@ impl Scanner {
             } else if self.advance() == '\n' {
                 // Advances with the next char
                 self.line += 1;
+                self.column = 0;
             }
         }
         // Unclosed block comment error
@@ -155,35 +162,33 @@ impl Scanner {
     }
 
     fn advance(&mut self) -> char {
-        let _char = self.source[self.current];
+        let _char = if self.current >= self.source.len() {
+            self.source[self.current - 1]
+        } else {
+            self.source[self.current]
+        };
         self.current += 1;
+        self.column += 1;
         _char
     }
 
     fn add_token_literal(&mut self, token_type: TokenType, literal: LiteralType) {
-        let text = &self.source[self.start..self.current];
-        self.tokens.push(Token::new(
-            token_type,
-            String::from_iter(text),
-            literal,
-            self.line,
-        ));
+        let lexeme = self.source[self.start..self.current].iter().collect();
+        self.tokens
+            .push(Token::new(token_type, lexeme, literal, self.line));
     }
 
     fn add_token(&mut self, token_type: TokenType) {
-        let text = &self.source[self.start..self.current];
-        self.tokens.push(Token::new(
-            token_type,
-            String::from_iter(text),
-            LiteralType::Nil,
-            self.line,
-        ));
+        let lexeme = self.source[self.start..self.current].iter().collect();
+        self.tokens
+            .push(Token::new(token_type, lexeme, LiteralType::Nil, self.line));
     }
 
     fn add_string(&mut self) -> Result<(), LoxError> {
         while self.peek() != '"' && !self.is_at_end() {
             if self.peek() == '\n' {
                 self.line += 1;
+                self.column = 0;
             }
             self.advance();
         }
