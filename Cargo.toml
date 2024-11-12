@@ -3,4 +3,5 @@ name = "rlox-interpreter"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
+[build-dependencies]
+generate_ast = { path = "generate_ast" }

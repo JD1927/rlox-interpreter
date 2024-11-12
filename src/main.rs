@@ -1,5 +1,6 @@
 // Modules
 mod error;
+mod expr;
 mod scanner;
 mod token;
 // Imports
