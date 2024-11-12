@@ -11,10 +11,10 @@ impl LoxError {
             message: message.to_string(),
         }
     }
-    pub fn report(&self, location: &str) {
+    pub fn report(&self, column: &str) {
         let error = format!(
             "[line {}] - Error: {} => at column {}",
-            self.line, self.message, location
+            self.line, self.message, column
         );
         eprintln!("{}", error)
     }

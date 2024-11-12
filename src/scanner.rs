@@ -33,7 +33,7 @@ impl Scanner {
         self.tokens.push(Token::new(
             TokenType::Eof,
             "".to_owned(),
-            LiteralType::Nil,
+            Object::Nil,
             self.line,
         ));
         Ok(self.tokens.clone())
@@ -172,7 +172,7 @@ impl Scanner {
         _char
     }
 
-    fn add_token_literal(&mut self, token_type: TokenType, literal: LiteralType) {
+    fn add_token_literal(&mut self, token_type: TokenType, literal: Object) {
         let lexeme = self.source[self.start..self.current].iter().collect();
         self.tokens
             .push(Token::new(token_type, lexeme, literal, self.line));
@@ -181,7 +181,7 @@ impl Scanner {
     fn add_token(&mut self, token_type: TokenType) {
         let lexeme = self.source[self.start..self.current].iter().collect();
         self.tokens
-            .push(Token::new(token_type, lexeme, LiteralType::Nil, self.line));
+            .push(Token::new(token_type, lexeme, Object::Nil, self.line));
     }
 
     fn add_string(&mut self) -> Result<(), LoxError> {
@@ -203,7 +203,7 @@ impl Scanner {
         let value: String = self.source[self.start + 1..self.current - 1]
             .iter()
             .collect();
-        self.add_token_literal(TokenType::String, LiteralType::String(value));
+        self.add_token_literal(TokenType::String, Object::String(value));
         Ok(())
     }
 
@@ -222,7 +222,7 @@ impl Scanner {
         let value: f64 = String::from_iter(&self.source[self.start..self.current])
             .parse::<f64>()
             .unwrap();
-        self.add_token_literal(TokenType::Number, LiteralType::Number(value));
+        self.add_token_literal(TokenType::Number, Object::Number(value));
     }
 
     fn add_identifier(&mut self) {
@@ -235,11 +235,11 @@ impl Scanner {
 
         match token_type {
             Some(t_type) => match t_type {
-                TokenType::True => self.add_token_literal(t_type, LiteralType::Bool(true)),
-                TokenType::False => self.add_token_literal(t_type, LiteralType::Bool(false)),
+                TokenType::True => self.add_token_literal(t_type, Object::Bool(true)),
+                TokenType::False => self.add_token_literal(t_type, Object::Bool(false)),
                 _ => self.add_token(t_type),
             },
-            None => self.add_token_literal(TokenType::Identifier, LiteralType::String(value)),
+            None => self.add_token_literal(TokenType::Identifier, Object::String(value)),
         }
     }
 

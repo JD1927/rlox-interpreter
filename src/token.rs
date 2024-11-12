@@ -4,12 +4,12 @@ use core::fmt;
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
-    pub literal: LiteralType,
+    pub literal: Object,
     pub line: usize,
 }
 
 impl Token {
-    pub fn new(token_type: TokenType, lexeme: String, literal: LiteralType, line: usize) -> Token {
+    pub fn new(token_type: TokenType, lexeme: String, literal: Object, line: usize) -> Token {
         Token {
             token_type,
             lexeme,
@@ -30,7 +30,7 @@ impl fmt::Display for Token {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum LiteralType {
+pub enum Object {
     String(String),
     Number(f64),
     Bool(bool),
