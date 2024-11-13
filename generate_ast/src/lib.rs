@@ -39,6 +39,10 @@ pub fn define_ast(output_dir: String, base_name: String, tree_types: &[String]) 
         )?
     }
 
+    // Implement Base Type
+    impl_base_type(&mut file, &base_name, tree_types)?;
+    writeln!(&mut file)?;
+
     Ok(())
 }
 
@@ -78,30 +82,45 @@ fn define_base(file: &mut File, base_name: &str, tree_types: &[String]) -> io::R
 }
 
 fn define_type(file: &mut File, base_name: &str, tree_type: TreeType) -> io::Result<()> {
+    // Define Struct type
     writeln!(file, "#[derive(Debug, Clone)]")?;
     writeln!(file, "pub struct {}{} {{", tree_type.struct_name, base_name)?;
     for field in tree_type.fields {
         let (field_type, field_name) = field.trim().split_once(' ').unwrap();
-        writeln!(file, "    {}: {},", field_name, field_type)?;
+        writeln!(file, "    pub {}: {},", field_name, field_type)?;
     }
 
     writeln!(file, "}}",)?;
     writeln!(file)?;
-    writeln!(file, "impl {}{} {{", tree_type.struct_name, base_name)?;
+    Ok(())
+}
+
+fn impl_base_type(file: &mut File, base_name: &str, tree_types: &[String]) -> io::Result<()> {
+    writeln!(file, "impl {} {{", base_name)?;
     writeln!(
         file,
-        "    fn accept<T>(&self, visitor: &mut dyn {}Visitor<T>) -> T {{",
+        "    pub fn accept<T>(&self, visitor: &mut dyn {}Visitor<T>) -> T {{",
         base_name
     )?;
-    writeln!(
-        file,
-        "        visitor.visit_{}_{}(self)",
-        tree_type.struct_name.to_lowercase(),
-        base_name.to_lowercase()
-    )?;
+    writeln!(file, "        match self {{",)?;
+    for tree_type in tree_types {
+        let (tree_name, _) = tree_type.split_once(':').unwrap();
+        writeln!(
+            file,
+            "            {}::{}({}_{}) => visitor.visit_{}_{}({}_{}),",
+            base_name.trim(),
+            tree_name.trim(),
+            tree_name.trim().to_lowercase(),
+            base_name.trim().to_lowercase(),
+            tree_name.trim().to_lowercase(),
+            base_name.trim().to_lowercase(),
+            tree_name.trim().to_lowercase(),
+            base_name.trim().to_lowercase(),
+        )?;
+    }
+    writeln!(file, "        }}",)?;
     writeln!(file, "    }}")?;
-    writeln!(file, "}}")?;
+    writeln!(file, "}}",)?;
     writeln!(file)?;
-
     Ok(())
 }

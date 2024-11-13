@@ -16,48 +16,36 @@ pub enum Expr {
 
 #[derive(Debug, Clone)]
 pub struct BinaryExpr {
-    left: Box<Expr>,
-    operator: Token,
-    right: Box<Expr>,
-}
-
-impl BinaryExpr {
-    fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> T {
-        visitor.visit_binary_expr(self)
-    }
+    pub left: Box<Expr>,
+    pub operator: Token,
+    pub right: Box<Expr>,
 }
 
 #[derive(Debug, Clone)]
 pub struct GroupingExpr {
-    expression: Box<Expr>,
-}
-
-impl GroupingExpr {
-    fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> T {
-        visitor.visit_grouping_expr(self)
-    }
+    pub expression: Box<Expr>,
 }
 
 #[derive(Debug, Clone)]
 pub struct LiteralExpr {
-    value: Object,
-}
-
-impl LiteralExpr {
-    fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> T {
-        visitor.visit_literal_expr(self)
-    }
+    pub value: Object,
 }
 
 #[derive(Debug, Clone)]
 pub struct UnaryExpr {
-    operator: Token,
-    right: Box<Expr>,
+    pub operator: Token,
+    pub right: Box<Expr>,
 }
 
-impl UnaryExpr {
-    fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> T {
-        visitor.visit_unary_expr(self)
+impl Expr {
+    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> T {
+        match self {
+            Expr::Binary(binary_expr) => visitor.visit_binary_expr(binary_expr),
+            Expr::Grouping(grouping_expr) => visitor.visit_grouping_expr(grouping_expr),
+            Expr::Literal(literal_expr) => visitor.visit_literal_expr(literal_expr),
+            Expr::Unary(unary_expr) => visitor.visit_unary_expr(unary_expr),
+        }
     }
 }
+
 
