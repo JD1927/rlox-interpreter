@@ -1,15 +1,20 @@
 // Modules
 mod error;
 mod expr;
+mod parser;
 mod scanner;
 mod token;
+mod utils;
 // Imports
 use error::LoxError;
+use parser::Parser;
 use scanner::Scanner;
 use std::env::args;
 use std::io::{self, Write};
+use utils::ast_printer::AstPrinter;
 
 fn main() {
+    // TODO: Add a way to handle print AST an arg
     let args: Vec<String> = args().collect();
 
     match args.len() {
@@ -39,14 +44,17 @@ fn run_prompt() {
         let _ = run(line);
     }
 }
+
 fn run(source: String) -> Result<(), LoxError> {
     // Lexical Analysis
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens()?;
 
-    for token in tokens {
-        println!("{:?}", token);
-    }
+    // Parsing
+    let mut parser = Parser::new(tokens);
+    let expression = parser.parse()?;
+
+    AstPrinter::new().print(&expression);
 
     Ok(())
 }

@@ -3,6 +3,9 @@ use crate::{expr::*, token::*};
 pub struct AstPrinter;
 
 impl AstPrinter {
+    pub fn new() -> AstPrinter {
+        AstPrinter {}
+    }
     pub fn print(&mut self, expr: &Expr) -> String {
         expr.accept(self)
     }
@@ -41,6 +44,7 @@ impl ExprVisitor<String> for AstPrinter {
     }
 }
 
+#[test]
 pub fn test_ast_print() {
     let expression = Expr::Binary(BinaryExpr {
         left: Box::new(Expr::Unary(UnaryExpr {

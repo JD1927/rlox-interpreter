@@ -26,7 +26,7 @@ impl Scanner {
             self.start = self.current;
             match self.scan_token() {
                 Ok(_) => {}
-                Err(e) => e.report(&self.column.to_string()),
+                Err(e) => e.report_column(&self.column.to_string()),
             }
         }
 
@@ -109,7 +109,7 @@ impl Scanner {
                 } else if self.is_alphanumeric() {
                     self.add_identifier();
                 } else {
-                    return Err(LoxError::error(self.line, "Unexpected character."));
+                    return Err(LoxError::new(self.line, "Unexpected character."));
                 }
             }
         }
@@ -144,7 +144,7 @@ impl Scanner {
             }
         }
         // Unclosed block comment error
-        Err(LoxError::error(self.line, "Unterminated block comment."))
+        Err(LoxError::new(self.line, "Unterminated block comment."))
     }
 
     fn peek(&self) -> char {
@@ -194,7 +194,7 @@ impl Scanner {
         }
 
         if self.is_at_end() {
-            return Err(LoxError::error(self.line, "Unterminated string."));
+            return Err(LoxError::new(self.line, "Unterminated string."));
         }
         // The closing quote "
         self.advance();
