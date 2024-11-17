@@ -19,7 +19,25 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Result<Expr, LoxError> {
-        self.equality()
+        self.comma()
+    }
+
+    // Add comma operator
+    fn comma(&mut self) -> Result<Expr, LoxError> {
+        let mut expr = self.equality()?;
+
+        // Allow multiple comma-separated expressions!
+        while self.matches(&[TokenType::Comma]) {
+            let operator = self.previous();
+            let right = self.equality()?;
+            expr = Expr::Binary(BinaryExpr {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            });
+        }
+
+        Ok(expr)
     }
 
     fn equality(&mut self) -> Result<Expr, LoxError> {
