@@ -15,10 +15,7 @@ impl Parser {
     }
 
     pub fn parse(&mut self) -> Result<Expr, LoxError> {
-        match self.expression() {
-            Ok(expr) => Ok(expr),
-            Err(err) => Err(err),
-        }
+        self.expression()
     }
 
     fn expression(&mut self) -> Result<Expr, LoxError> {
@@ -61,7 +58,7 @@ impl Parser {
     fn check(&mut self, token_type: &TokenType) -> bool {
         match self.is_at_end() {
             true => false,
-            false => self.peek().token_type == *token_type,
+            false => self.peek().is(token_type.to_owned()),
         }
     }
 
@@ -73,7 +70,7 @@ impl Parser {
     }
 
     fn is_at_end(&mut self) -> bool {
-        self.peek().token_type == TokenType::Eof
+        self.peek().is(TokenType::Eof)
     }
 
     fn peek(&self) -> Token {
@@ -87,22 +84,23 @@ impl Parser {
     fn synchronize(&mut self) {
         self.advance();
 
-        while self.is_at_end() {
-            if self.previous().token_type == TokenType::Semicolon {
+        while !self.is_at_end() {
+            if self.previous().is(TokenType::Semicolon) {
                 return;
             }
             match self.peek().token_type {
-                TokenType::Class => {}
-                TokenType::Fun => {}
-                TokenType::Var => {}
-                TokenType::For => {}
-                TokenType::If => {}
-                TokenType::While => {}
-                TokenType::Print => {}
-                TokenType::Return => return,
-                _ => return,
+                TokenType::Class
+                | TokenType::Fun
+                | TokenType::Var
+                | TokenType::For
+                | TokenType::If
+                | TokenType::While
+                | TokenType::Print
+                | TokenType::Return => return,
+                _ => {
+                    self.advance();
+                }
             }
-            self.advance();
         }
     }
 

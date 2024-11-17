@@ -6,7 +6,7 @@ impl AstPrinter {
     pub fn new() -> AstPrinter {
         AstPrinter {}
     }
-    pub fn print(&mut self, expr: &Expr) -> String {
+    pub fn to_string(&mut self, expr: &Expr) -> String {
         expr.accept(self)
     }
 
@@ -72,5 +72,5 @@ pub fn test_ast_print() {
     });
 
     let mut ast_printer = AstPrinter {};
-    println!("{}", ast_printer.print(&expression))
+    println!("{}", ast_printer.to_string(&expression))
 }

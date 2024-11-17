@@ -52,9 +52,14 @@ fn run(source: String) -> Result<(), LoxError> {
 
     // Parsing
     let mut parser = Parser::new(tokens);
-    let expression = parser.parse()?;
+    let expression = parser.parse();
 
-    AstPrinter::new().print(&expression);
+    if expression.is_err() {
+        return Err(expression.err().unwrap());
+    }
+
+    let expr = AstPrinter::new().to_string(&expression.unwrap());
+    println!("{}", expr);
 
     Ok(())
 }

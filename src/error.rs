@@ -37,7 +37,7 @@ impl LoxError {
     pub fn parse_error(token: Token, message: &str) -> LoxError {
         let mut lox_error = LoxError::error(token.line, message);
         lox_error.error_type = ErrorType::Parser;
-        match token.token_type == TokenType::Eof {
+        match token.is(TokenType::Eof) {
             true => lox_error.report_location(" at end"),
             false => lox_error.report_location(format!(" at '{}'", token.lexeme).as_str()),
         }

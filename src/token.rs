@@ -17,6 +17,10 @@ impl Token {
             line,
         }
     }
+
+    pub fn is(&self, token_type: TokenType) -> bool {
+        self.token_type == token_type
+    }
 }
 
 impl fmt::Display for Token {
