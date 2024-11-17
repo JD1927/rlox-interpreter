@@ -14,7 +14,7 @@ pub struct LoxError {
 }
 
 impl LoxError {
-    pub fn new(line: usize, message: &str) -> LoxError {
+    pub fn error(line: usize, message: &str) -> LoxError {
         LoxError {
             line,
             message: message.to_string(),
@@ -23,19 +23,19 @@ impl LoxError {
     }
     pub fn report_column(&self, column: &str) {
         let error = format!(
-            "[line {}] - Error: {} => at column {}",
-            self.line, self.message, column
+            "[Line {}, Column {}] - Error: {}",
+            self.line, column, self.message
         );
         eprintln!("{}", error)
     }
 
     pub fn report_location(&self, location: &str) {
-        let error = format!("[line {}] - Error{}: {}", self.line, location, self.message);
+        let error = format!("[Line {}] - Error{}: {}", self.line, location, self.message);
         eprintln!("{}", error)
     }
 
     pub fn parse_error(token: Token, message: &str) -> LoxError {
-        let mut lox_error = LoxError::new(token.line, message);
+        let mut lox_error = LoxError::error(token.line, message);
         lox_error.error_type = ErrorType::Parser;
         match token.token_type == TokenType::Eof {
             true => lox_error.report_location(" at end"),

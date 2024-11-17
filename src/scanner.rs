@@ -106,10 +106,10 @@ impl Scanner {
             _ => {
                 if _char.is_ascii_digit() {
                     self.add_number();
-                } else if self.is_alphanumeric() {
+                } else if _char.is_ascii_alphabetic() || _char == '_' {
                     self.add_identifier();
                 } else {
-                    return Err(LoxError::new(self.line, "Unexpected character."));
+                    return Err(LoxError::error(self.line, "Unexpected character."));
                 }
             }
         }
@@ -144,7 +144,7 @@ impl Scanner {
             }
         }
         // Unclosed block comment error
-        Err(LoxError::new(self.line, "Unterminated block comment."))
+        Err(LoxError::error(self.line, "Unterminated block comment."))
     }
 
     fn peek(&self) -> char {
@@ -194,7 +194,7 @@ impl Scanner {
         }
 
         if self.is_at_end() {
-            return Err(LoxError::new(self.line, "Unterminated string."));
+            return Err(LoxError::error(self.line, "Unterminated string."));
         }
         // The closing quote "
         self.advance();
@@ -244,7 +244,7 @@ impl Scanner {
     }
 
     fn is_alphanumeric(&self) -> bool {
-        self.peek().is_ascii_alphanumeric() || self.peek() == '_'
+        self.peek().is_ascii_alphabetic() || self.peek().is_ascii_digit() || self.peek() == '_'
     }
 
     fn get_keyword(&self, word: &str) -> Option<TokenType> {
