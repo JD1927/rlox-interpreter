@@ -1,6 +1,6 @@
 use crate::{
     error::LoxError,
-    expr::{BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr},
+    expr::{BinaryExpr, CommaExpr, Expr, GroupingExpr, LiteralExpr, TernaryExpr, UnaryExpr},
     token::{Object, Token, TokenType},
 };
 
@@ -24,19 +24,39 @@ impl Parser {
 
     // Add comma operator
     fn comma(&mut self) -> Result<Expr, LoxError> {
-        let mut expr = self.equality()?;
+        let mut expr = self.ternary()?;
 
         // Allow multiple comma-separated expressions!
         while self.matches(&[TokenType::Comma]) {
-            let operator = self.previous();
-            let right = self.equality()?;
-            expr = Expr::Binary(BinaryExpr {
+            let right = self.ternary()?;
+            expr = Expr::Comma(CommaExpr {
                 left: Box::new(expr),
-                operator,
                 right: Box::new(right),
             });
         }
 
+        Ok(expr)
+    }
+
+    // Add ternary support with '?' and ':'
+    fn ternary(&mut self) -> Result<Expr, LoxError> {
+        let mut expr = self.equality()?;
+
+        // Check for "?" to begin a ternary expression
+        while self.matches(&[TokenType::Question]) {
+            let then_branch = self.expression()?; // "Then" expression
+            self.consume(
+                TokenType::Colon,
+                "Expect ':' after then branch of ternary operator.",
+            )?;
+            let else_branch = self.ternary()?; // "Else expression with right-associativity"
+
+            expr = Expr::Ternary(TernaryExpr {
+                condition: Box::new(expr),
+                then_branch: Box::new(then_branch),
+                else_branch: Box::new(else_branch),
+            })
+        }
         Ok(expr)
     }
 
@@ -54,72 +74,6 @@ impl Parser {
         }
 
         Ok(expr)
-    }
-
-    fn matches(&mut self, token_types: &[TokenType]) -> bool {
-        for token_type in token_types {
-            if self.check(token_type) {
-                self.advance();
-                return true;
-            }
-        }
-        false
-    }
-
-    fn consume(&mut self, token_type: TokenType, message: &str) -> Result<Token, LoxError> {
-        match self.check(&token_type) {
-            true => Ok(self.advance()),
-            false => Err(LoxError::parse_error(self.peek(), message)),
-        }
-    }
-
-    fn check(&mut self, token_type: &TokenType) -> bool {
-        match self.is_at_end() {
-            true => false,
-            false => self.peek().is(token_type.to_owned()),
-        }
-    }
-
-    fn advance(&mut self) -> Token {
-        if !self.is_at_end() {
-            self.current += 1;
-        }
-        self.previous()
-    }
-
-    fn is_at_end(&mut self) -> bool {
-        self.peek().is(TokenType::Eof)
-    }
-
-    fn peek(&self) -> Token {
-        self.tokens[self.current].clone()
-    }
-
-    fn previous(&self) -> Token {
-        self.tokens[self.current - 1].clone()
-    }
-
-    fn synchronize(&mut self) {
-        self.advance();
-
-        while !self.is_at_end() {
-            if self.previous().is(TokenType::Semicolon) {
-                return;
-            }
-            match self.peek().token_type {
-                TokenType::Class
-                | TokenType::Fun
-                | TokenType::Var
-                | TokenType::For
-                | TokenType::If
-                | TokenType::While
-                | TokenType::Print
-                | TokenType::Return => return,
-                _ => {
-                    self.advance();
-                }
-            }
-        }
     }
 
     fn comparison(&mut self) -> Result<Expr, LoxError> {
@@ -216,5 +170,71 @@ impl Parser {
             }));
         }
         Err(LoxError::parse_error(self.peek(), "Expect expression."))
+    }
+    // HELPERS
+    fn matches(&mut self, token_types: &[TokenType]) -> bool {
+        for token_type in token_types {
+            if self.check(token_type) {
+                self.advance();
+                return true;
+            }
+        }
+        false
+    }
+
+    fn consume(&mut self, token_type: TokenType, message: &str) -> Result<Token, LoxError> {
+        match self.check(&token_type) {
+            true => Ok(self.advance()),
+            false => Err(LoxError::parse_error(self.peek(), message)),
+        }
+    }
+
+    fn check(&mut self, token_type: &TokenType) -> bool {
+        match self.is_at_end() {
+            true => false,
+            false => self.peek().is(token_type.to_owned()),
+        }
+    }
+
+    fn advance(&mut self) -> Token {
+        if !self.is_at_end() {
+            self.current += 1;
+        }
+        self.previous()
+    }
+
+    fn is_at_end(&mut self) -> bool {
+        self.peek().is(TokenType::Eof)
+    }
+
+    fn peek(&self) -> Token {
+        self.tokens[self.current].clone()
+    }
+
+    fn previous(&self) -> Token {
+        self.tokens[self.current - 1].clone()
+    }
+
+    fn synchronize(&mut self) {
+        self.advance();
+
+        while !self.is_at_end() {
+            if self.previous().is(TokenType::Semicolon) {
+                return;
+            }
+            match self.peek().token_type {
+                TokenType::Class
+                | TokenType::Fun
+                | TokenType::Var
+                | TokenType::For
+                | TokenType::If
+                | TokenType::While
+                | TokenType::Print
+                | TokenType::Return => return,
+                _ => {
+                    self.advance();
+                }
+            }
+        }
     }
 }

@@ -6,7 +6,7 @@ impl AstPrinter {
     pub fn new() -> AstPrinter {
         AstPrinter {}
     }
-    pub fn to_string(&mut self, expr: &Expr) -> String {
+    pub fn string_value(&mut self, expr: &Expr) -> String {
         expr.accept(self)
     }
 
@@ -42,6 +42,17 @@ impl ExprVisitor<String> for AstPrinter {
     fn visit_unary_expr(&mut self, expr: &UnaryExpr) -> String {
         self.parenthesize(&expr.operator.lexeme, vec![&expr.right])
     }
+    fn visit_comma_expr(&mut self, expr: &CommaExpr) -> String {
+        format!("{}, {}", expr.left.accept(self), expr.right.accept(self))
+    }
+    fn visit_ternary_expr(&mut self, expr: &TernaryExpr) -> String {
+        format!(
+            "{} ? {} : {}",
+            expr.condition.accept(self),
+            expr.then_branch.accept(self),
+            expr.else_branch.accept(self)
+        )
+    }
 }
 
 #[test]
@@ -72,5 +83,5 @@ pub fn test_ast_print() {
     });
 
     let mut ast_printer = AstPrinter {};
-    println!("{}", ast_printer.to_string(&expression))
+    println!("{}", ast_printer.string_value(&expression))
 }

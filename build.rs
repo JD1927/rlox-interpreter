@@ -19,6 +19,8 @@ fn main() -> io::Result<()> {
                     "Grouping : Box<Expr> expression".to_string(),
                     "Literal  : Object value".to_string(),
                     "Unary    : Token operator, Box<Expr> right".to_string(),
+                    "Comma    : Box<Expr> left, Box<Expr> right".to_string(),
+                    "Ternary  : Box<Expr> condition, Box<Expr> then_branch, Box<Expr> else_branch".to_string(),
                 ],
             )
         }

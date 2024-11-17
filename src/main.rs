@@ -58,7 +58,7 @@ fn run(source: String) -> Result<(), LoxError> {
         return Err(expression.err().unwrap());
     }
 
-    let expr = AstPrinter::new().to_string(&expression.unwrap());
+    let expr = AstPrinter::new().string_value(&expression.unwrap());
     println!("{}", expr);
 
     Ok(())
