@@ -1,4 +1,4 @@
-use crate::{expr::*, token::*};
+use crate::{expr::*, object::*};
 
 pub struct AstPrinter;
 
@@ -55,33 +55,39 @@ impl ExprVisitor<String> for AstPrinter {
     }
 }
 
-#[test]
-pub fn test_ast_print() {
-    let expression = Expr::Binary(BinaryExpr {
-        left: Box::new(Expr::Unary(UnaryExpr {
+#[cfg(test)]
+mod ast_printer_tests {
+    use crate::token::*;
+
+    use super::*;
+    #[test]
+    pub fn test_ast_print() {
+        let expression = Expr::Binary(BinaryExpr {
+            left: Box::new(Expr::Unary(UnaryExpr {
+                operator: Token {
+                    token_type: TokenType::Minus,
+                    lexeme: String::from("-"),
+                    literal: Object::Nil,
+                    line: 1,
+                },
+                right: Box::new(Expr::Literal(LiteralExpr {
+                    value: Object::Number(123.0),
+                })),
+            })),
             operator: Token {
-                token_type: TokenType::Minus,
-                lexeme: String::from("-"),
+                token_type: TokenType::Star,
+                lexeme: String::from("*"),
                 literal: Object::Nil,
                 line: 1,
             },
-            right: Box::new(Expr::Literal(LiteralExpr {
-                value: Object::Number(123.0),
+            right: Box::new(Expr::Grouping(GroupingExpr {
+                expression: Box::new(Expr::Literal(LiteralExpr {
+                    value: Object::Number(45.67),
+                })),
             })),
-        })),
-        operator: Token {
-            token_type: TokenType::Star,
-            lexeme: String::from("*"),
-            literal: Object::Nil,
-            line: 1,
-        },
-        right: Box::new(Expr::Grouping(GroupingExpr {
-            expression: Box::new(Expr::Literal(LiteralExpr {
-                value: Object::Number(45.67),
-            })),
-        })),
-    });
+        });
 
-    let mut ast_printer = AstPrinter {};
-    println!("{}", ast_printer.string_value(&expression))
+        let mut ast_printer = AstPrinter {};
+        println!("{}", ast_printer.string_value(&expression))
+    }
 }

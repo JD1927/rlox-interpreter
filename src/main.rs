@@ -1,6 +1,8 @@
 // Modules
 mod error;
 mod expr;
+mod interpreter;
+mod object;
 mod parser;
 mod scanner;
 mod token;
