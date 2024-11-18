@@ -1,4 +1,6 @@
-use core::fmt;
+use std::fmt;
+
+use crate::object::Object;
 
 #[derive(Debug, Clone)]
 pub struct Token {
@@ -31,14 +33,6 @@ impl fmt::Display for Token {
             self.token_type, self.lexeme, self.literal, self.line
         )
     }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum Object {
-    String(String),
-    Number(f64),
-    Bool(bool),
-    Nil,
 }
 
 #[derive(Debug, Clone, PartialEq)]
