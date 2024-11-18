@@ -1,4 +1,4 @@
-use crate::{error::LoxError, token::*};
+use crate::{error::LoxError, object::Object, token::*};
 
 pub struct Scanner {
     source: Vec<char>,
@@ -111,7 +111,7 @@ impl Scanner {
                 } else if _char.is_ascii_alphabetic() || _char == '_' {
                     self.add_identifier();
                 } else {
-                    return Err(LoxError::error(self.line, "Unexpected character."));
+                    return Err(LoxError::lexical_error(self.line, "Unexpected character."));
                 }
             }
         }
@@ -146,7 +146,10 @@ impl Scanner {
             }
         }
         // Unclosed block comment error
-        Err(LoxError::error(self.line, "Unterminated block comment."))
+        Err(LoxError::lexical_error(
+            self.line,
+            "Unterminated block comment.",
+        ))
     }
 
     fn peek(&self) -> char {
@@ -196,7 +199,7 @@ impl Scanner {
         }
 
         if self.is_at_end() {
-            return Err(LoxError::error(self.line, "Unterminated string."));
+            return Err(LoxError::lexical_error(self.line, "Unterminated string."));
         }
         // The closing quote "
         self.advance();

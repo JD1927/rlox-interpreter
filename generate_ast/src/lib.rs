@@ -12,6 +12,7 @@ pub fn define_ast(output_dir: String, base_name: String, tree_types: &[String]) 
     let mut file = File::create(path).expect("Failed to create file on specified location");
 
     writeln!(&mut file, "use crate::token::*;")?;
+    writeln!(&mut file, "use crate::object::*;")?;
     writeln!(&mut file)?;
 
     // define Visitor trait

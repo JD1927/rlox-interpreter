@@ -1,4 +1,5 @@
 use crate::token::*;
+use crate::object::*;
 
 pub trait ExprVisitor<T> {
     fn visit_binary_expr(&mut self, expr: &BinaryExpr) -> T;
