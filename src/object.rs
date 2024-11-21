@@ -1,6 +1,6 @@
-use std::{fmt, ops::*};
+use std::{cmp::Ordering, fmt, ops::*};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub enum Object {
     String(String),
     Number(f64),
@@ -29,6 +29,7 @@ impl Sub for Object {
         }
     }
 }
+
 impl Div for Object {
     type Output = Result<Object, String>;
 
@@ -45,6 +46,7 @@ impl Div for Object {
         }
     }
 }
+
 impl Mul for Object {
     type Output = Result<Object, String>;
 
@@ -66,6 +68,28 @@ impl Add for Object {
                 Ok(Object::String(format!("{left}{right}")))
             }
             _ => Err("Operands must be numbers or strings for '+' operation.".to_string()),
+        }
+    }
+}
+
+impl PartialOrd for Object {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match (self, other) {
+            (Object::Number(left), Object::Number(right)) => left.partial_cmp(right),
+            (Object::String(left), Object::String(right)) => left.partial_cmp(right),
+            _ => None,
+        }
+    }
+}
+
+impl PartialEq for Object {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Object::String(left), Object::String(right)) => left == right,
+            (Object::Number(left), Object::Number(right)) => left == right,
+            (Object::Bool(left), Object::Bool(right)) => left == right,
+            (Object::Nil, Object::Nil) => true,
+            _ => false,
         }
     }
 }
