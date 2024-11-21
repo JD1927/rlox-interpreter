@@ -24,9 +24,15 @@ impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
                 Ok(result) => Ok(result),
                 Err(message) => Err(LoxError::interpreter_error(expr.operator.line, &message)),
             },
+            TokenType::Greater => Ok(Object::Bool(left > right)),
+            TokenType::GreaterEqual => Ok(Object::Bool(left >= right)),
+            TokenType::Less => Ok(Object::Bool(left < right)),
+            TokenType::LessEqual => Ok(Object::Bool(left <= right)),
+            TokenType::BangEqual => Ok(Object::Bool(left != right)),
+            TokenType::EqualEqual => Ok(Object::Bool(left == right)),
             _ => Err(LoxError::interpreter_error(
                 expr.operator.line,
-                "Unsupported binary operator",
+                "Unsupported binary operation.",
             )),
         }
     }
@@ -56,11 +62,16 @@ impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
     }
 
     fn visit_comma_expr(&mut self, expr: &CommaExpr) -> Result<Object, LoxError> {
-        todo!()
+        self.evaluate(&expr.left)?;
+        self.evaluate(&expr.right)
     }
 
     fn visit_ternary_expr(&mut self, expr: &TernaryExpr) -> Result<Object, LoxError> {
-        todo!()
+        let condition = self.evaluate(&expr.condition)?;
+        match self.is_truthy(condition) {
+            true => self.evaluate(&expr.then_branch),
+            false => self.evaluate(&expr.else_branch),
+        }
     }
 }
 
@@ -91,9 +102,9 @@ mod interpreter_tests {
         }))
     }
 
-    fn make_literal_string(str_val: String) -> Box<Expr> {
+    fn make_literal_string(str_val: &str) -> Box<Expr> {
         Box::new(Expr::Literal(LiteralExpr {
-            value: Object::String(str_val),
+            value: Object::String(str_val.to_string()),
         }))
     }
 
@@ -101,6 +112,10 @@ mod interpreter_tests {
         Box::new(Expr::Literal(LiteralExpr {
             value: Object::Bool(value),
         }))
+    }
+
+    fn make_literal_nil() -> Box<Expr> {
+        Box::new(Expr::Literal(LiteralExpr { value: Object::Nil }))
     }
 
     fn make_token_operator(token_type: TokenType, operator: &str) -> Token {
@@ -180,9 +195,9 @@ mod interpreter_tests {
         // Arrange
         let mut interpreter = Interpreter::new();
         let binary_expr = BinaryExpr {
-            left: make_literal_string("Hello, ".to_string()),
+            left: make_literal_string("Hello, "),
             operator: make_token_operator(TokenType::Plus, "+"),
-            right: make_literal_string("Rust".to_string()),
+            right: make_literal_string("Rust"),
         };
 
         // Act
@@ -193,20 +208,292 @@ mod interpreter_tests {
     }
 
     #[test]
-    fn test_greater_operator() {
+    fn test_greater_than_operator() {
         // Arrange
         let mut interpreter = Interpreter::new();
-        let binary_expr = BinaryExpr {
+        let binary_expr_1: BinaryExpr = BinaryExpr {
             left: make_literal_number(2.0),
+            operator: make_token_operator(TokenType::Greater, ">"),
+            right: make_literal_number(3.0),
+        };
+        let binary_expr_2: BinaryExpr = BinaryExpr {
+            left: make_literal_number(3.0),
+            operator: make_token_operator(TokenType::Greater, ">"),
+            right: make_literal_number(0.0),
+        };
+        let binary_expr_3: BinaryExpr = BinaryExpr {
+            left: make_literal_number(3.0),
             operator: make_token_operator(TokenType::Greater, ">"),
             right: make_literal_number(3.0),
         };
 
         // Act
-        let result = interpreter.visit_binary_expr(&binary_expr);
+        let result_1 = interpreter.visit_binary_expr(&binary_expr_1);
+        let result_2 = interpreter.visit_binary_expr(&binary_expr_2);
+        let result_3 = interpreter.visit_binary_expr(&binary_expr_3);
+        // Assert
+        assert!(result_1.is_ok());
+        assert_eq!(result_1.ok(), Some(Object::Bool(false)));
+
+        assert!(result_2.is_ok());
+        assert_eq!(result_2.ok(), Some(Object::Bool(true)));
+
+        assert!(result_3.is_ok());
+        assert_eq!(result_3.ok(), Some(Object::Bool(false)));
+    }
+
+    #[test]
+    fn test_greater_than_or_equal_operator() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+        let binary_expr_1: BinaryExpr = BinaryExpr {
+            left: make_literal_number(2.0),
+            operator: make_token_operator(TokenType::GreaterEqual, ">="),
+            right: make_literal_number(3.0),
+        };
+        let binary_expr_2: BinaryExpr = BinaryExpr {
+            left: make_literal_number(3.0),
+            operator: make_token_operator(TokenType::GreaterEqual, ">="),
+            right: make_literal_number(0.0),
+        };
+        let binary_expr_3: BinaryExpr = BinaryExpr {
+            left: make_literal_number(3.0),
+            operator: make_token_operator(TokenType::GreaterEqual, ">="),
+            right: make_literal_number(3.0),
+        };
+
+        // Act
+        let result_1 = interpreter.visit_binary_expr(&binary_expr_1);
+        let result_2 = interpreter.visit_binary_expr(&binary_expr_2);
+        let result_3 = interpreter.visit_binary_expr(&binary_expr_3);
+        // Assert
+        assert!(result_1.is_ok());
+        assert_eq!(result_1.ok(), Some(Object::Bool(false)));
+
+        assert!(result_2.is_ok());
+        assert_eq!(result_2.ok(), Some(Object::Bool(true)));
+
+        assert!(result_3.is_ok());
+        assert_eq!(result_3.ok(), Some(Object::Bool(true)));
+    }
+
+    #[test]
+    fn test_less_than_operator() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+        let binary_expr_1: BinaryExpr = BinaryExpr {
+            left: make_literal_number(2.0),
+            operator: make_token_operator(TokenType::Less, "<"),
+            right: make_literal_number(3.0),
+        };
+        let binary_expr_2: BinaryExpr = BinaryExpr {
+            left: make_literal_number(3.0),
+            operator: make_token_operator(TokenType::Less, "<"),
+            right: make_literal_number(0.0),
+        };
+        let binary_expr_3: BinaryExpr = BinaryExpr {
+            left: make_literal_number(3.0),
+            operator: make_token_operator(TokenType::Less, "<"),
+            right: make_literal_number(3.0),
+        };
+
+        // Act
+        let result_1 = interpreter.visit_binary_expr(&binary_expr_1);
+        let result_2 = interpreter.visit_binary_expr(&binary_expr_2);
+        let result_3 = interpreter.visit_binary_expr(&binary_expr_3);
+        // Assert
+        assert!(result_1.is_ok());
+        assert_eq!(result_1.ok(), Some(Object::Bool(true)));
+
+        assert!(result_2.is_ok());
+        assert_eq!(result_2.ok(), Some(Object::Bool(false)));
+
+        assert!(result_3.is_ok());
+        assert_eq!(result_3.ok(), Some(Object::Bool(false)));
+    }
+
+    #[test]
+    fn test_less_than_or_equal_operator() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+        let binary_expr_1: BinaryExpr = BinaryExpr {
+            left: make_literal_number(2.0),
+            operator: make_token_operator(TokenType::LessEqual, "<="),
+            right: make_literal_number(3.0),
+        };
+        let binary_expr_2: BinaryExpr = BinaryExpr {
+            left: make_literal_number(3.0),
+            operator: make_token_operator(TokenType::LessEqual, "<="),
+            right: make_literal_number(0.0),
+        };
+        let binary_expr_3: BinaryExpr = BinaryExpr {
+            left: make_literal_number(3.0),
+            operator: make_token_operator(TokenType::LessEqual, "<="),
+            right: make_literal_number(3.0),
+        };
+
+        // Act
+        let result_1 = interpreter.visit_binary_expr(&binary_expr_1);
+        let result_2 = interpreter.visit_binary_expr(&binary_expr_2);
+        let result_3 = interpreter.visit_binary_expr(&binary_expr_3);
+        // Assert
+        assert!(result_1.is_ok());
+        assert_eq!(result_1.ok(), Some(Object::Bool(true)));
+
+        assert!(result_2.is_ok());
+        assert_eq!(result_2.ok(), Some(Object::Bool(false)));
+
+        assert!(result_3.is_ok());
+        assert_eq!(result_3.ok(), Some(Object::Bool(true)));
+    }
+
+    #[test]
+    fn test_bang_equal_operator() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+        let binary_expr_1: BinaryExpr = BinaryExpr {
+            left: make_literal_number(2.0),
+            operator: make_token_operator(TokenType::BangEqual, "!="),
+            right: make_literal_number(3.0),
+        };
+        let binary_expr_2: BinaryExpr = BinaryExpr {
+            left: make_literal_number(3.0),
+            operator: make_token_operator(TokenType::BangEqual, "!="),
+            right: make_literal_number(3.0),
+        };
+        let binary_expr_3: BinaryExpr = BinaryExpr {
+            left: make_literal_nil(),
+            operator: make_token_operator(TokenType::BangEqual, "!="),
+            right: make_literal_nil(),
+        };
+        let binary_expr_4: BinaryExpr = BinaryExpr {
+            left: make_literal_bool(true),
+            operator: make_token_operator(TokenType::BangEqual, "!="),
+            right: make_literal_bool(false),
+        };
+        let binary_expr_5: BinaryExpr = BinaryExpr {
+            left: make_literal_string("Hello"),
+            operator: make_token_operator(TokenType::BangEqual, "!="),
+            right: make_literal_string("World"),
+        };
+
+        // Act
+        let result_1 = interpreter.visit_binary_expr(&binary_expr_1);
+        let result_2 = interpreter.visit_binary_expr(&binary_expr_2);
+        let result_3 = interpreter.visit_binary_expr(&binary_expr_3);
+        let result_4 = interpreter.visit_binary_expr(&binary_expr_4);
+        let result_5 = interpreter.visit_binary_expr(&binary_expr_5);
+        // Assert
+        assert!(result_1.is_ok());
+        assert_eq!(result_1.ok(), Some(Object::Bool(true)));
+
+        assert!(result_2.is_ok());
+        assert_eq!(result_2.ok(), Some(Object::Bool(false)));
+
+        assert!(result_3.is_ok());
+        assert_eq!(result_3.ok(), Some(Object::Bool(false)));
+
+        assert!(result_4.is_ok());
+        assert_eq!(result_4.ok(), Some(Object::Bool(true)));
+
+        assert!(result_5.is_ok());
+        assert_eq!(result_5.ok(), Some(Object::Bool(true)));
+    }
+
+    #[test]
+    fn test_equal_equal_operator() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+        let binary_expr_1: BinaryExpr = BinaryExpr {
+            left: make_literal_number(2.0),
+            operator: make_token_operator(TokenType::EqualEqual, "=="),
+            right: make_literal_number(3.0),
+        };
+        let binary_expr_2: BinaryExpr = BinaryExpr {
+            left: make_literal_number(3.0),
+            operator: make_token_operator(TokenType::EqualEqual, "=="),
+            right: make_literal_number(3.0),
+        };
+        let binary_expr_3: BinaryExpr = BinaryExpr {
+            left: make_literal_nil(),
+            operator: make_token_operator(TokenType::EqualEqual, "=="),
+            right: make_literal_nil(),
+        };
+        let binary_expr_4: BinaryExpr = BinaryExpr {
+            left: make_literal_bool(true),
+            operator: make_token_operator(TokenType::EqualEqual, "=="),
+            right: make_literal_bool(false),
+        };
+        let binary_expr_5: BinaryExpr = BinaryExpr {
+            left: make_literal_string("Hello"),
+            operator: make_token_operator(TokenType::EqualEqual, "=="),
+            right: make_literal_string("World"),
+        };
+
+        // Act
+        let result_1 = interpreter.visit_binary_expr(&binary_expr_1);
+        let result_2 = interpreter.visit_binary_expr(&binary_expr_2);
+        let result_3 = interpreter.visit_binary_expr(&binary_expr_3);
+        let result_4 = interpreter.visit_binary_expr(&binary_expr_4);
+        let result_5 = interpreter.visit_binary_expr(&binary_expr_5);
+        // Assert
+        assert!(result_1.is_ok());
+        assert_eq!(result_1.ok(), Some(Object::Bool(false)));
+
+        assert!(result_2.is_ok());
+        assert_eq!(result_2.ok(), Some(Object::Bool(true)));
+
+        assert!(result_3.is_ok());
+        assert_eq!(result_3.ok(), Some(Object::Bool(true)));
+
+        assert!(result_4.is_ok());
+        assert_eq!(result_4.ok(), Some(Object::Bool(false)));
+
+        assert!(result_5.is_ok());
+        assert_eq!(result_5.ok(), Some(Object::Bool(false)));
+    }
+
+    #[test]
+    fn test_ternary_operator() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+        let ternary: TernaryExpr = TernaryExpr {
+            condition: Box::new(Expr::Binary(BinaryExpr {
+                left: make_literal_number(69.0),
+                operator: make_token_operator(TokenType::EqualEqual, "=="),
+                right: make_literal_number(69.0),
+            })),
+            then_branch: make_literal_string("Ohhh yeaahhh!"),
+            else_branch: make_literal_string(":c"),
+        };
+
+        // Act
+        let result = interpreter.visit_ternary_expr(&ternary);
         // Assert
         assert!(result.is_ok());
-        assert_eq!(result.ok(), Some(Object::String("Hello, Rust".to_string())));
+        assert_eq!(
+            result.ok(),
+            Some(Object::String("Ohhh yeaahhh!".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_comma_operator() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+        let ternary: CommaExpr = CommaExpr {
+            left: make_literal_number(69.0),
+            right: make_literal_string("Ohhh yeaahhh!"),
+        };
+
+        // Act
+        let result = interpreter.visit_comma_expr(&ternary);
+        // Assert
+        assert!(result.is_ok());
+        assert_eq!(
+            result.ok(),
+            Some(Object::String("Ohhh yeaahhh!".to_string()))
+        );
     }
 
     #[test]
