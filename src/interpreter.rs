@@ -193,6 +193,40 @@ mod interpreter_tests {
     }
 
     #[test]
+    fn test_greater_operator() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+        let binary_expr = BinaryExpr {
+            left: make_literal_number(2.0),
+            operator: make_token_operator(TokenType::Greater, ">"),
+            right: make_literal_number(3.0),
+        };
+
+        // Act
+        let result = interpreter.visit_binary_expr(&binary_expr);
+        // Assert
+        assert!(result.is_ok());
+        assert_eq!(result.ok(), Some(Object::String("Hello, Rust".to_string())));
+    }
+
+    #[test]
+    fn test_arithmetic_error_for_subtraction() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+        let binary_expr = BinaryExpr {
+            left: make_literal_bool(true),
+            operator: make_token_operator(TokenType::Minus, "-"),
+            right: make_literal_number(71.0),
+        };
+
+        // Act
+        let result = interpreter.visit_binary_expr(&binary_expr);
+        // Assert
+        assert!(result.is_err());
+        println!("{}", result.err().unwrap());
+    }
+
+    #[test]
     fn test_unary_minus() {
         // Arrange
         let mut interpreter = Interpreter::new();
@@ -222,22 +256,5 @@ mod interpreter_tests {
         // Assert
         assert!(result.is_ok());
         assert_eq!(result.ok(), Some(Object::Bool(true)));
-    }
-
-    #[test]
-    fn test_arithmetic_error_for_subtraction() {
-        // Arrange
-        let mut interpreter = Interpreter::new();
-        let binary_expr = BinaryExpr {
-            left: make_literal_bool(true),
-            operator: make_token_operator(TokenType::Minus, "-"),
-            right: make_literal_number(71.0),
-        };
-
-        // Act
-        let result = interpreter.visit_binary_expr(&binary_expr);
-        // Assert
-        assert!(result.is_err());
-        println!("{}", result.err().unwrap());
     }
 }

@@ -33,7 +33,7 @@ impl ExprVisitor<String> for AstPrinter {
     }
     fn visit_literal_expr(&mut self, expr: &LiteralExpr) -> String {
         match &expr.value {
-            Object::String(value) => value.to_string(),
+            Object::String(value) => format!("\"{value}\""),
             Object::Number(value) => value.to_string(),
             Object::Bool(value) => value.to_string(),
             Object::Nil => String::from("nil"),
