@@ -24,10 +24,34 @@ impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
                 Ok(result) => Ok(result),
                 Err(message) => Err(LoxError::interpreter_error(expr.operator.line, &message)),
             },
-            TokenType::Greater => Ok(Object::Bool(left > right)),
-            TokenType::GreaterEqual => Ok(Object::Bool(left >= right)),
-            TokenType::Less => Ok(Object::Bool(left < right)),
-            TokenType::LessEqual => Ok(Object::Bool(left <= right)),
+            TokenType::Greater => match (left, right) {
+                (Object::Number(left), Object::Number(right)) => Ok(Object::Bool(left > right)),
+                _ => Err(LoxError::interpreter_error(
+                    expr.operator.line,
+                    "Operands must be numbers for '>' operation.",
+                )),
+            },
+            TokenType::GreaterEqual => match (left, right) {
+                (Object::Number(left), Object::Number(right)) => Ok(Object::Bool(left >= right)),
+                _ => Err(LoxError::interpreter_error(
+                    expr.operator.line,
+                    "Operands must be numbers for '>=' operation.",
+                )),
+            },
+            TokenType::Less => match (left, right) {
+                (Object::Number(left), Object::Number(right)) => Ok(Object::Bool(left < right)),
+                _ => Err(LoxError::interpreter_error(
+                    expr.operator.line,
+                    "Operands must be numbers for '<' operation.",
+                )),
+            },
+            TokenType::LessEqual => match (left, right) {
+                (Object::Number(left), Object::Number(right)) => Ok(Object::Bool(left <= right)),
+                _ => Err(LoxError::interpreter_error(
+                    expr.operator.line,
+                    "Operands must be numbers for '<=' operation.",
+                )),
+            },
             TokenType::BangEqual => Ok(Object::Bool(left != right)),
             TokenType::EqualEqual => Ok(Object::Bool(left == right)),
             _ => Err(LoxError::interpreter_error(
@@ -52,7 +76,10 @@ impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
             TokenType::Bang => Ok(Object::Bool(!self.is_truthy(right))),
             TokenType::Minus => match right {
                 Object::Number(val) => Ok(Object::Number(-val)),
-                _ => Ok(Object::Nil),
+                _ => Err(LoxError::interpreter_error(
+                    expr.operator.line,
+                    "Operand must be a number.",
+                )),
             },
             _ => Err(LoxError::interpreter_error(
                 expr.operator.line,
@@ -226,11 +253,17 @@ mod interpreter_tests {
             operator: make_token_operator(TokenType::Greater, ">"),
             right: make_literal_number(3.0),
         };
+        let binary_expr_4: BinaryExpr = BinaryExpr {
+            left: make_literal_string("3.0"),
+            operator: make_token_operator(TokenType::Greater, ">"),
+            right: make_literal_number(3.0),
+        };
 
         // Act
         let result_1 = interpreter.visit_binary_expr(&binary_expr_1);
         let result_2 = interpreter.visit_binary_expr(&binary_expr_2);
         let result_3 = interpreter.visit_binary_expr(&binary_expr_3);
+        let result_4 = interpreter.visit_binary_expr(&binary_expr_4);
         // Assert
         assert!(result_1.is_ok());
         assert_eq!(result_1.ok(), Some(Object::Bool(false)));
@@ -240,6 +273,8 @@ mod interpreter_tests {
 
         assert!(result_3.is_ok());
         assert_eq!(result_3.ok(), Some(Object::Bool(false)));
+
+        assert!(result_4.is_err());
     }
 
     #[test]
@@ -261,11 +296,17 @@ mod interpreter_tests {
             operator: make_token_operator(TokenType::GreaterEqual, ">="),
             right: make_literal_number(3.0),
         };
+        let binary_expr_4: BinaryExpr = BinaryExpr {
+            left: make_literal_string("3.0"),
+            operator: make_token_operator(TokenType::GreaterEqual, ">="),
+            right: make_literal_number(3.0),
+        };
 
         // Act
         let result_1 = interpreter.visit_binary_expr(&binary_expr_1);
         let result_2 = interpreter.visit_binary_expr(&binary_expr_2);
         let result_3 = interpreter.visit_binary_expr(&binary_expr_3);
+        let result_4 = interpreter.visit_binary_expr(&binary_expr_4);
         // Assert
         assert!(result_1.is_ok());
         assert_eq!(result_1.ok(), Some(Object::Bool(false)));
@@ -275,6 +316,8 @@ mod interpreter_tests {
 
         assert!(result_3.is_ok());
         assert_eq!(result_3.ok(), Some(Object::Bool(true)));
+
+        assert!(result_4.is_err());
     }
 
     #[test]
@@ -296,11 +339,17 @@ mod interpreter_tests {
             operator: make_token_operator(TokenType::Less, "<"),
             right: make_literal_number(3.0),
         };
+        let binary_expr_4: BinaryExpr = BinaryExpr {
+            left: make_literal_number(3.0),
+            operator: make_token_operator(TokenType::Less, "<"),
+            right: make_literal_string("3.0"),
+        };
 
         // Act
         let result_1 = interpreter.visit_binary_expr(&binary_expr_1);
         let result_2 = interpreter.visit_binary_expr(&binary_expr_2);
         let result_3 = interpreter.visit_binary_expr(&binary_expr_3);
+        let result_4 = interpreter.visit_binary_expr(&binary_expr_4);
         // Assert
         assert!(result_1.is_ok());
         assert_eq!(result_1.ok(), Some(Object::Bool(true)));
@@ -310,6 +359,8 @@ mod interpreter_tests {
 
         assert!(result_3.is_ok());
         assert_eq!(result_3.ok(), Some(Object::Bool(false)));
+
+        assert!(result_4.is_err());
     }
 
     #[test]
@@ -331,11 +382,17 @@ mod interpreter_tests {
             operator: make_token_operator(TokenType::LessEqual, "<="),
             right: make_literal_number(3.0),
         };
+        let binary_expr_4: BinaryExpr = BinaryExpr {
+            left: make_literal_number(3.0),
+            operator: make_token_operator(TokenType::LessEqual, "<="),
+            right: make_literal_string("3.0"),
+        };
 
         // Act
         let result_1 = interpreter.visit_binary_expr(&binary_expr_1);
         let result_2 = interpreter.visit_binary_expr(&binary_expr_2);
         let result_3 = interpreter.visit_binary_expr(&binary_expr_3);
+        let result_4 = interpreter.visit_binary_expr(&binary_expr_4);
         // Assert
         assert!(result_1.is_ok());
         assert_eq!(result_1.ok(), Some(Object::Bool(true)));
@@ -345,6 +402,8 @@ mod interpreter_tests {
 
         assert!(result_3.is_ok());
         assert_eq!(result_3.ok(), Some(Object::Bool(true)));
+
+        assert!(result_4.is_ok());
     }
 
     #[test]
@@ -517,16 +576,24 @@ mod interpreter_tests {
     fn test_unary_minus() {
         // Arrange
         let mut interpreter = Interpreter::new();
-        let unary_expr = UnaryExpr {
+        let unary_expr_1 = UnaryExpr {
             operator: make_token_operator(TokenType::Minus, "-"),
             right: make_literal_number(123.0),
         };
+        let unary_expr_2 = UnaryExpr {
+            operator: make_token_operator(TokenType::Minus, "-"),
+            right: make_literal_string("Coffee"),
+        };
 
         // Act
-        let result = interpreter.visit_unary_expr(&unary_expr);
+        let result_1 = interpreter.visit_unary_expr(&unary_expr_1);
+        let result_2 = interpreter.visit_unary_expr(&unary_expr_2);
         // Assert
-        assert!(result.is_ok());
-        assert_eq!(result.ok(), Some(Object::Number(-123.0)));
+        assert!(result_1.is_ok());
+        assert_eq!(result_1.ok(), Some(Object::Number(-123.0)));
+
+        assert!(result_2.is_err());
+        println!("{:?}", result_2.err());
     }
 
     #[test]
