@@ -67,7 +67,13 @@ impl Add for Object {
             (Object::String(left), Object::String(right)) => {
                 Ok(Object::String(format!("{left}{right}")))
             }
-            _ => Err("Operands must be two numbers or two strings for '+' operation.".to_string()),
+            (Object::String(left), Object::Number(right)) => {
+                Ok(Object::String(format!("{left}{right}")))
+            }
+            (Object::Number(left), Object::String(right)) => {
+                Ok(Object::String(format!("{left}{right}")))
+            }
+            _ => Err("Operands must be strings or numbers for '+' operation.".to_string()),
         }
     }
 }

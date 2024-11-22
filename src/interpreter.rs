@@ -153,10 +153,6 @@ mod interpreter_tests {
         }))
     }
 
-    fn make_literal_nil() -> Box<Expr> {
-        Box::new(Expr::Literal(LiteralExpr { value: Object::Nil }))
-    }
-
     fn make_token_operator(token_type: TokenType, operator: &str) -> Token {
         Token::new(token_type, operator.to_string(), Object::Nil, 1)
     }
@@ -196,7 +192,7 @@ mod interpreter_tests {
                 &token.lexeme,
                 operand.1.clone()
             );
-            assert_eq!(result.is_ok(), results[idx].0);
+            assert_eq!(result.is_ok(), results[idx].0, "{}", &message_for_ok);
             if result.is_ok() {
                 assert_eq!(
                     result.ok(),
@@ -222,8 +218,8 @@ mod interpreter_tests {
             (Object::Number(3.0), Object::Number(1.0)),
             (Object::Number(3.0), Object::Number(3.0)),
             // Errors
-            (Object::String("4.0".to_string()), Object::Number(3.0)),
-            (Object::Number(3.0), Object::String("2.0".to_string())),
+            (Object::String("4.0".to_string()), Object::Nil),
+            (Object::Nil, Object::String("2.0".to_string())),
             (Object::Bool(true), Object::String("2.0".to_string())),
             (Object::Bool(true), Object::Number(3.0)),
             (Object::Bool(true), Object::Bool(false)),
@@ -245,9 +241,9 @@ mod interpreter_tests {
                 Object::String("Split".to_string()),
                 Object::String(" two".to_string()),
             ),
-            // Errors
             (Object::String("4.0".to_string()), Object::Number(3.0)),
             (Object::Number(3.0), Object::String("2.0".to_string())),
+            // Errors
             (Object::Bool(true), Object::String("2.0".to_string())),
             (Object::Bool(true), Object::Number(3.0)),
             (Object::Bool(true), Object::Bool(false)),
@@ -344,7 +340,7 @@ mod interpreter_tests {
             (true, Object::Number(4.0)), // 3.0 , 1.0
             (true, Object::Number(6.0)), // 3.0 , 3.0
             // Errors
-            (false, Object::Nil),
+            (false, Object::String("43".to_string())),
             (false, Object::Nil),
             (false, Object::Nil),
             (false, Object::Nil),
@@ -362,9 +358,9 @@ mod interpreter_tests {
             (true, Object::String("Hi, Rusty".to_string())),
             (true, Object::String("Together".to_string())),
             (true, Object::String("Split two".to_string())),
+            (true, Object::String("4.03".to_string())),
+            (true, Object::String("32.0".to_string())),
             // Errors
-            (false, Object::Nil),
-            (false, Object::Nil),
             (false, Object::Nil),
             (false, Object::Nil),
             (false, Object::Nil),
