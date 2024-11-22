@@ -103,9 +103,17 @@ impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
 }
 
 impl Interpreter {
-    fn new() -> Interpreter {
+    pub fn new() -> Interpreter {
         Interpreter {}
     }
+
+    pub fn interpret(&mut self, expr: &Expr) -> Result<(), LoxError> {
+        match self.evaluate(expr) {
+            Ok(value) => Ok(println!("{}", value)),
+            Err(err) => Err(err),
+        }
+    }
+
     fn evaluate(&mut self, expr: &Expr) -> Result<Object, LoxError> {
         expr.accept(self)
     }

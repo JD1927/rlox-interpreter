@@ -27,7 +27,7 @@ impl LoxError {
 
     pub fn report_column(&self, column: &str) {
         let error = format!(
-            "[Line {}, Column {}] - Error: {}",
+            "[Line {}: Col {}] - Error: {}",
             self.line, column, self.message
         );
         eprintln!("{}", error)
@@ -57,6 +57,7 @@ impl LoxError {
     pub fn interpreter_error(line: usize, message: &str) -> LoxError {
         let mut lox_error = LoxError::error(line, message);
         lox_error.error_type = Some(ErrorType::Interpreter);
+        lox_error.report_location("");
         lox_error
     }
 }
