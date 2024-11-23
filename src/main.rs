@@ -6,6 +6,7 @@ mod lox;
 mod object;
 mod parser;
 mod scanner;
+mod stmt;
 mod token;
 mod utils;
 // Imports

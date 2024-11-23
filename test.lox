@@ -1,9 +1,11 @@
 // this is a comment
-((321 == 123)){} // grouping stuff
-!*+-/=<> <= == // operators
-"my wonderful string"
-9a10
-9.10230
+// ((321 == 123)){}
+// grouping stuff
+//!*+-/=<> <= ==
+// operators
+print "my wonderful string";
+print 9.10230;
+print 12 + 1.0;
 /************************
 /*
 This is */

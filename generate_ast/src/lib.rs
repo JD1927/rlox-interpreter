@@ -7,12 +7,15 @@ struct TreeType {
     fields: Vec<String>,
 }
 
-pub fn define_ast(output_dir: String, base_name: String, tree_types: &[String]) -> io::Result<()> {
+pub fn define_ast(output_dir: &str, base_name: String, tree_types: &[String]) -> io::Result<()> {
     let path = format!("{output_dir}/{}.rs", base_name.to_lowercase());
     let mut file = File::create(path).expect("Failed to create file on specified location");
 
     writeln!(&mut file, "use crate::token::*;")?;
     writeln!(&mut file, "use crate::object::*;")?;
+    if base_name.to_lowercase().contains("stmt") {
+        writeln!(&mut file, "use crate::expr::*;")?;
+    }
     writeln!(&mut file)?;
 
     // define Visitor trait

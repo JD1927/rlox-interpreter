@@ -37,19 +37,12 @@ impl Lox {
 
         // Parsing
         let mut parser = Parser::new(tokens);
-        let expression = parser.parse();
-
         // Stop if there was a syntax error
-        if expression.is_err() {
-            return Err(expression.err().unwrap());
-        }
+        let statements = parser.parse()?;
 
-        match expression {
-            Ok(expr) => {
-                let _ = self.interpreter.interpret(&expr);
-                Ok(())
-            }
-            Err(err) => Err(err),
-        }
+        // Run Interpreter
+        self.interpreter.interpret(&statements)?;
+
+        Ok(())
     }
 }

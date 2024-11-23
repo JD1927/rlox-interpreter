@@ -1,6 +1,19 @@
-use crate::{error::LoxError, expr::*, object::*, token::*};
+use crate::{error::LoxError, expr::*, object::*, stmt::*, token::*};
 
 pub struct Interpreter;
+
+impl StmtVisitor<Result<(), LoxError>> for Interpreter {
+    fn visit_expression_stmt(&mut self, stmt: &ExpressionStmt) -> Result<(), LoxError> {
+        self.evaluate(&stmt.expression)?;
+        Ok(())
+    }
+
+    fn visit_print_stmt(&mut self, stmt: &PrintStmt) -> Result<(), LoxError> {
+        let value = self.evaluate(&stmt.expression)?;
+        println!("{value}");
+        Ok(())
+    }
+}
 
 impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
     fn visit_binary_expr(&mut self, expr: &BinaryExpr) -> Result<Object, LoxError> {
@@ -107,11 +120,15 @@ impl Interpreter {
         Interpreter {}
     }
 
-    pub fn interpret(&mut self, expr: &Expr) -> Result<(), LoxError> {
-        match self.evaluate(expr) {
-            Ok(value) => Ok(println!("{}", value)),
-            Err(err) => Err(err),
+    pub fn interpret(&mut self, statements: &[Stmt]) -> Result<(), LoxError> {
+        for statement in statements {
+            self.execute(statement)?
         }
+        Ok(())
+    }
+
+    fn execute(&mut self, stmt: &Stmt) -> Result<(), LoxError> {
+        stmt.accept(self)
     }
 
     fn evaluate(&mut self, expr: &Expr) -> Result<Object, LoxError> {

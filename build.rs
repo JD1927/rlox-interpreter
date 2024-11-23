@@ -12,7 +12,7 @@ fn main() -> io::Result<()> {
                 None => "src".to_string(),
             };
             define_ast(
-                output_dir,
+                &output_dir,
                 "Expr".to_string(),
                 &[
                     "Binary   : Box<Expr> left, Token operator, Box<Expr> right".to_string(),
@@ -20,9 +20,19 @@ fn main() -> io::Result<()> {
                     "Literal  : Object value".to_string(),
                     "Unary    : Token operator, Box<Expr> right".to_string(),
                     "Comma    : Box<Expr> left, Box<Expr> right".to_string(),
-                    "Ternary  : Box<Expr> condition, Box<Expr> then_branch, Box<Expr> else_branch".to_string(),
+                    "Ternary  : Box<Expr> condition, Box<Expr> then_branch, Box<Expr> else_branch"
+                        .to_string(),
                 ],
-            )
+            )?;
+            define_ast(
+                &output_dir,
+                "Stmt".to_string(),
+                &[
+                    "Expression : Box<Expr> expression".to_string(),
+                    "Print      : Box<Expr> expression".to_string(),
+                ],
+            )?;
+            Ok(())
         }
         _ => {
             eprintln!("Usage: generate-ast <output_directory>");
