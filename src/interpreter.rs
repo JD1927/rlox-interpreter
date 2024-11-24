@@ -1,6 +1,8 @@
-use crate::{error::LoxError, expr::*, object::*, stmt::*, token::*};
+use crate::{environment::*, error::LoxError, expr::*, object::*, stmt::*, token::*};
 
-pub struct Interpreter;
+pub struct Interpreter {
+    environment: Environment,
+}
 
 impl StmtVisitor<Result<(), LoxError>> for Interpreter {
     fn visit_expression_stmt(&mut self, stmt: &ExpressionStmt) -> Result<(), LoxError> {
@@ -16,7 +18,9 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
 
     fn visit_var_stmt(&mut self, stmt: &VarStmt) -> Result<(), LoxError> {
         let initializer = self.evaluate(&stmt.initializer)?;
-        println!("var {initializer}");
+
+        self.environment
+            .define(stmt.name.lexeme.clone(), initializer);
         Ok(())
     }
 }
@@ -120,14 +124,16 @@ impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
         }
     }
 
-    fn visit_variable_expr(&mut self, _expr: &VariableExpr) -> Result<Object, LoxError> {
-        Ok(Object::Nil)
+    fn visit_variable_expr(&mut self, expr: &VariableExpr) -> Result<Object, LoxError> {
+        self.environment.get(&expr.name)
     }
 }
 
 impl Interpreter {
     pub fn new() -> Interpreter {
-        Interpreter {}
+        Interpreter {
+            environment: Environment::new(),
+        }
     }
 
     pub fn interpret(&mut self, statements: &[Stmt]) -> Result<(), LoxError> {
@@ -182,6 +188,15 @@ mod interpreter_tests {
 
     fn make_token_operator(token_type: TokenType, operator: &str) -> Token {
         Token::new(token_type, operator.to_string(), Object::Nil, 1)
+    }
+
+    fn make_token_identifier(identifier: &str) -> Token {
+        Token::new(
+            TokenType::Identifier,
+            identifier.to_string(),
+            Object::Nil,
+            1,
+        )
     }
 
     fn run_binary_test(
@@ -599,5 +614,77 @@ mod interpreter_tests {
         // Assert
         assert!(result.is_ok());
         assert_eq!(result.ok(), Some(Object::Bool(true)));
+    }
+
+    #[test]
+    fn test_var_statement_defined() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+        let initializer = make_literal_number(123.0);
+        let name = make_token_identifier("my_variable");
+        let var_stmt = VarStmt {
+            name: name.clone(),
+            initializer,
+        };
+
+        // Act
+        let result = interpreter.visit_var_stmt(&var_stmt);
+        // Assert
+        assert!(result.is_ok());
+        assert!(interpreter.environment.get(&name).is_ok());
+    }
+
+    #[test]
+    fn test_var_statement_nil() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+        let initializer = make_literal(Object::Nil);
+        let name = make_token_identifier("my_variable");
+        let var_stmt = VarStmt {
+            name: name.clone(),
+            initializer,
+        };
+
+        // Act
+        let result = interpreter.visit_var_stmt(&var_stmt);
+        // Assert
+        assert!(result.is_ok());
+        assert!(interpreter.environment.get(&name).is_ok());
+        assert_eq!(interpreter.environment.get(&name).ok(), Some(Object::Nil));
+    }
+
+    #[test]
+    fn test_var_expression_defined() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+        let name = make_token_identifier("my_variable");
+        let initializer = make_literal_number(123.0);
+        let var_stmt = VarStmt {
+            name: name.clone(),
+            initializer,
+        };
+        let var_expr = VariableExpr { name: name.clone() };
+
+        // Act
+        let result = interpreter.visit_var_stmt(&var_stmt);
+        assert!(result.is_ok());
+
+        let result = interpreter.visit_variable_expr(&var_expr);
+        // Assert
+        assert!(result.is_ok());
+        assert_eq!(result.ok(), Some(Object::Number(123.0)));
+    }
+
+    #[test]
+    fn test_var_expression_undefined() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+        let name = make_token_identifier("my_variable");
+        let var_expr = VariableExpr { name };
+
+        // Act
+        let result = interpreter.visit_variable_expr(&var_expr);
+        // Assert
+        assert!(result.is_err());
     }
 }

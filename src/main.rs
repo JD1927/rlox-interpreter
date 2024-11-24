@@ -1,4 +1,5 @@
 // Modules
+mod environment;
 mod error;
 mod expr;
 mod interpreter;
