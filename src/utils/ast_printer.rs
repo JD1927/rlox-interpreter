@@ -53,6 +53,10 @@ impl ExprVisitor<String> for AstPrinter {
             expr.else_branch.accept(self)
         )
     }
+
+    fn visit_variable_expr(&mut self, expr: &VariableExpr) -> String {
+        todo!()
+    }
 }
 
 #[cfg(test)]

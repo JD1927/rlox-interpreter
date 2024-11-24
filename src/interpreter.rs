@@ -13,6 +13,12 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
         println!("{value}");
         Ok(())
     }
+
+    fn visit_var_stmt(&mut self, stmt: &VarStmt) -> Result<(), LoxError> {
+        let initializer = self.evaluate(&stmt.initializer)?;
+        println!("var {initializer}");
+        Ok(())
+    }
 }
 
 impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
@@ -112,6 +118,10 @@ impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
             true => self.evaluate(&expr.then_branch),
             false => self.evaluate(&expr.else_branch),
         }
+    }
+
+    fn visit_variable_expr(&mut self, _expr: &VariableExpr) -> Result<Object, LoxError> {
+        Ok(Object::Nil)
     }
 }
 

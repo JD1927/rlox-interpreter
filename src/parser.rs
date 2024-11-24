@@ -1,8 +1,11 @@
 use crate::{
     error::LoxError,
-    expr::{BinaryExpr, CommaExpr, Expr, GroupingExpr, LiteralExpr, TernaryExpr, UnaryExpr},
+    expr::{
+        BinaryExpr, CommaExpr, Expr, GroupingExpr, LiteralExpr, TernaryExpr, UnaryExpr,
+        VariableExpr,
+    },
     object::*,
-    stmt::{PrintStmt, Stmt},
+    stmt::{PrintStmt, Stmt, VarStmt},
     token::{Token, TokenType},
 };
 
@@ -19,9 +22,41 @@ impl Parser {
     pub fn parse(&mut self) -> Result<Vec<Stmt>, LoxError> {
         let mut statements: Vec<Stmt> = Vec::new();
         while !self.is_at_end() {
-            statements.push(self.statement()?);
+            statements.push(self.declaration()?);
         }
         Ok(statements)
+    }
+
+    fn declaration(&mut self) -> Result<Stmt, LoxError> {
+        let declaration = if self.matches(&[TokenType::Var]) {
+            self.var_declaration()
+        } else {
+            self.statement()
+        };
+        // Has a parse error
+        if declaration.is_err() {
+            self.synchronize();
+        }
+        declaration
+    }
+
+    fn var_declaration(&mut self) -> Result<Stmt, LoxError> {
+        let name = self.consume(TokenType::Identifier, "Expect variable name.")?;
+        let initializer = if self.matches(&[TokenType::Equal]) {
+            self.expression()?
+        } else {
+            Expr::Literal(LiteralExpr { value: Object::Nil })
+        };
+
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after variable declaration.",
+        )?;
+
+        Ok(Stmt::Var(VarStmt {
+            name,
+            initializer: Box::new(initializer),
+        }))
     }
 
     fn statement(&mut self) -> Result<Stmt, LoxError> {
@@ -191,6 +226,12 @@ impl Parser {
                 value: value.literal,
             }));
         }
+
+        if self.matches(&[TokenType::Identifier]) {
+            let name = self.previous();
+            return Ok(Expr::Variable(VariableExpr { name }));
+        }
+
         if self.matches(&[TokenType::LeftParen]) {
             let expr = self.expression()?;
             self.consume(TokenType::RightParen, "Expect ')' after expression.")?;

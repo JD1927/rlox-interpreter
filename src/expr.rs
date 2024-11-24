@@ -8,6 +8,7 @@ pub trait ExprVisitor<T> {
     fn visit_unary_expr(&mut self, expr: &UnaryExpr) -> T;
     fn visit_comma_expr(&mut self, expr: &CommaExpr) -> T;
     fn visit_ternary_expr(&mut self, expr: &TernaryExpr) -> T;
+    fn visit_variable_expr(&mut self, expr: &VariableExpr) -> T;
 }
 #[derive(Debug, Clone)]
 pub enum Expr {
@@ -17,6 +18,7 @@ pub enum Expr {
     Unary(UnaryExpr),
     Comma(CommaExpr),
     Ternary(TernaryExpr),
+    Variable(VariableExpr),
 }
 
 #[derive(Debug, Clone)]
@@ -55,6 +57,11 @@ pub struct TernaryExpr {
     pub else_branch: Box<Expr>,
 }
 
+#[derive(Debug, Clone)]
+pub struct VariableExpr {
+    pub name: Token,
+}
+
 impl Expr {
     pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> T {
         match self {
@@ -64,6 +71,7 @@ impl Expr {
             Expr::Unary(unary_expr) => visitor.visit_unary_expr(unary_expr),
             Expr::Comma(comma_expr) => visitor.visit_comma_expr(comma_expr),
             Expr::Ternary(ternary_expr) => visitor.visit_ternary_expr(ternary_expr),
+            Expr::Variable(variable_expr) => visitor.visit_variable_expr(variable_expr),
         }
     }
 }

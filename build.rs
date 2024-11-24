@@ -13,6 +13,15 @@ fn main() -> io::Result<()> {
             };
             define_ast(
                 &output_dir,
+                "Stmt".to_string(),
+                &[
+                    "Expression : Box<Expr> expression".to_string(),
+                    "Print      : Box<Expr> expression".to_string(),
+                    "Var        : Token name, Box<Expr> initializer".to_string(),
+                ],
+            )?;
+            define_ast(
+                &output_dir,
                 "Expr".to_string(),
                 &[
                     "Binary   : Box<Expr> left, Token operator, Box<Expr> right".to_string(),
@@ -22,14 +31,7 @@ fn main() -> io::Result<()> {
                     "Comma    : Box<Expr> left, Box<Expr> right".to_string(),
                     "Ternary  : Box<Expr> condition, Box<Expr> then_branch, Box<Expr> else_branch"
                         .to_string(),
-                ],
-            )?;
-            define_ast(
-                &output_dir,
-                "Stmt".to_string(),
-                &[
-                    "Expression : Box<Expr> expression".to_string(),
-                    "Print      : Box<Expr> expression".to_string(),
+                    "Variable : Token name".to_string(),
                 ],
             )?;
             Ok(())
