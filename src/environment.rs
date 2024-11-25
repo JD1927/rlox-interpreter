@@ -27,6 +27,17 @@ impl Environment {
             ))
         }
     }
+
+    pub fn assign(&mut self, name: &Token, value: Object) -> Result<Object, LoxError> {
+        if self.values.contains_key(&name.lexeme) {
+            self.values.insert(name.lexeme.clone(), value);
+            return Ok(Object::Nil);
+        }
+        Err(LoxError::interpreter_error(
+            name.line,
+            &format!("Undefined variable '{}'.", name.lexeme),
+        ))
+    }
 }
 
 #[cfg(test)]
@@ -87,6 +98,30 @@ mod environment_test {
         let token = make_token_identifier("my_variable");
         // Act
         let result = env.get(&token);
+        // Assert
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_can_assign_value_to_variable() {
+        // Arrange
+        let mut env = Environment::new();
+        env.define("my_variable".to_string(), Object::Number(123.0));
+        let token = make_token_identifier("my_variable");
+        // Act
+        let result = env.assign(&token, Object::Bool(true));
+        // Assert
+        assert!(result.is_ok());
+        assert_eq!(result.ok(), Some(Object::Nil));
+        assert_eq!(env.get(&token).unwrap(), Object::Bool(true));
+    }
+    #[test]
+    fn test_cannot_assign_value_to_undefined_variable() {
+        // Arrange
+        let mut env = Environment::new();
+        let token = make_token_identifier("my_variable");
+        // Act
+        let result = env.assign(&token, Object::Bool(true));
         // Assert
         assert!(result.is_err());
     }

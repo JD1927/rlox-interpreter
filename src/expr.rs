@@ -2,6 +2,7 @@ use crate::token::*;
 use crate::object::*;
 
 pub trait ExprVisitor<T> {
+    fn visit_assign_expr(&mut self, expr: &AssignExpr) -> T;
     fn visit_binary_expr(&mut self, expr: &BinaryExpr) -> T;
     fn visit_grouping_expr(&mut self, expr: &GroupingExpr) -> T;
     fn visit_literal_expr(&mut self, expr: &LiteralExpr) -> T;
@@ -12,6 +13,7 @@ pub trait ExprVisitor<T> {
 }
 #[derive(Debug, Clone)]
 pub enum Expr {
+    Assign(AssignExpr),
     Binary(BinaryExpr),
     Grouping(GroupingExpr),
     Literal(LiteralExpr),
@@ -19,6 +21,12 @@ pub enum Expr {
     Comma(CommaExpr),
     Ternary(TernaryExpr),
     Variable(VariableExpr),
+}
+
+#[derive(Debug, Clone)]
+pub struct AssignExpr {
+    pub name: Token,
+    pub value: Box<Expr>,
 }
 
 #[derive(Debug, Clone)]
@@ -65,6 +73,7 @@ pub struct VariableExpr {
 impl Expr {
     pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> T {
         match self {
+            Expr::Assign(assign_expr) => visitor.visit_assign_expr(assign_expr),
             Expr::Binary(binary_expr) => visitor.visit_binary_expr(binary_expr),
             Expr::Grouping(grouping_expr) => visitor.visit_grouping_expr(grouping_expr),
             Expr::Literal(literal_expr) => visitor.visit_literal_expr(literal_expr),

@@ -127,6 +127,12 @@ impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
     fn visit_variable_expr(&mut self, expr: &VariableExpr) -> Result<Object, LoxError> {
         self.environment.get(&expr.name)
     }
+
+    fn visit_assign_expr(&mut self, expr: &AssignExpr) -> Result<Object, LoxError> {
+        let value = self.evaluate(&expr.value)?;
+        self.environment.assign(&expr.name, value.clone())?;
+        Ok(value)
+    }
 }
 
 impl Interpreter {
@@ -684,6 +690,46 @@ mod interpreter_tests {
 
         // Act
         let result = interpreter.visit_variable_expr(&var_expr);
+        // Assert
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_assign_value_to_existing_variable() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+
+        let name = make_token_identifier("my_variable");
+        let initializer = make_literal_number(123.0);
+        let var_stmt = VarStmt {
+            name: name.clone(),
+            initializer,
+        };
+
+        let value = make_literal_number(321.0);
+        let assign_expr = AssignExpr { name, value };
+
+        // Act
+        let result = interpreter.visit_var_stmt(&var_stmt);
+        assert!(result.is_ok());
+
+        let result = interpreter.visit_assign_expr(&assign_expr);
+        // Assert
+        assert!(result.is_ok());
+        assert_eq!(result.ok(), Some(Object::Number(321.0)));
+    }
+
+    #[test]
+    fn test_error_assign_value_to_undefined_variable() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+
+        let name = make_token_identifier("my_variable");
+        let value = make_literal_number(321.0);
+        let assign_expr = AssignExpr { name, value };
+
+        // Act
+        let result = interpreter.visit_assign_expr(&assign_expr);
         // Assert
         assert!(result.is_err());
     }

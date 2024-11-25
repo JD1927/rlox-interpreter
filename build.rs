@@ -24,6 +24,7 @@ fn main() -> io::Result<()> {
                 &output_dir,
                 "Expr".to_string(),
                 &[
+                    "Assign   : Token name, Box<Expr> value".to_string(),
                     "Binary   : Box<Expr> left, Token operator, Box<Expr> right".to_string(),
                     "Grouping : Box<Expr> expression".to_string(),
                     "Literal  : Object value".to_string(),

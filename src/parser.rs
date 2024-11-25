@@ -1,7 +1,7 @@
 use crate::{
     error::LoxError,
     expr::{
-        BinaryExpr, CommaExpr, Expr, GroupingExpr, LiteralExpr, TernaryExpr, UnaryExpr,
+        AssignExpr, BinaryExpr, CommaExpr, Expr, GroupingExpr, LiteralExpr, TernaryExpr, UnaryExpr,
         VariableExpr,
     },
     object::*,
@@ -88,17 +88,35 @@ impl Parser {
 
     // Add comma operator
     fn comma(&mut self) -> Result<Expr, LoxError> {
-        let mut expr = self.ternary()?;
+        let mut expr = self.assignment()?;
 
         // Allow multiple comma-separated expressions!
         while self.matches(&[TokenType::Comma]) {
-            let right = self.ternary()?;
+            let right = self.assignment()?;
             expr = Expr::Comma(CommaExpr {
                 left: Box::new(expr),
                 right: Box::new(right),
             });
         }
 
+        Ok(expr)
+    }
+
+    fn assignment(&mut self) -> Result<Expr, LoxError> {
+        let expr = self.ternary()?;
+
+        if self.matches(&[TokenType::Equal]) {
+            let equals = self.previous();
+            let value = self.assignment()?;
+
+            if let Expr::Variable(variable) = expr {
+                return Ok(Expr::Assign(AssignExpr {
+                    name: variable.name,
+                    value: Box::new(value),
+                }));
+            }
+            return Err(LoxError::parse_error(equals, "Invalid assignment target."));
+        }
         Ok(expr)
     }
 

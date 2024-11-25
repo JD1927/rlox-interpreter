@@ -23,8 +23,8 @@ impl Lox {
     pub fn run_prompt(&mut self) {
         loop {
             print!("> ");
-            let mut line = String::new();
             let _ = io::stdout().flush();
+            let mut line = String::new();
             io::stdin().read_line(&mut line).unwrap();
             let _ = self.run(line);
         }
