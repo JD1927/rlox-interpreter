@@ -23,6 +23,13 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
             .define(stmt.name.lexeme.clone(), initializer);
         Ok(())
     }
+
+    fn visit_block_stmt(&mut self, stmt: &BlockStmt) -> Result<(), LoxError> {
+        self.execute_block(
+            &stmt.statements,
+            Environment::new_enclosing(self.environment.clone()),
+        )
+    }
 }
 
 impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
@@ -151,6 +158,24 @@ impl Interpreter {
 
     fn execute(&mut self, stmt: &Stmt) -> Result<(), LoxError> {
         stmt.accept(self)
+    }
+
+    fn execute_block(
+        &mut self,
+        statements: &[Stmt],
+        environment: Environment,
+    ) -> Result<(), LoxError> {
+        let previous_env = environment.clone();
+
+        self.environment = environment;
+        for statement in statements {
+            if let Err(err) = self.execute(statement) {
+                self.environment = previous_env;
+                return Err(err);
+            }
+        }
+
+        Ok(())
     }
 
     fn evaluate(&mut self, expr: &Expr) -> Result<Object, LoxError> {

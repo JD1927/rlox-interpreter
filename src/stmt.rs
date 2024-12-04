@@ -3,15 +3,22 @@ use crate::object::*;
 use crate::expr::*;
 
 pub trait StmtVisitor<T> {
+    fn visit_block_stmt(&mut self, stmt: &BlockStmt) -> T;
     fn visit_expression_stmt(&mut self, stmt: &ExpressionStmt) -> T;
     fn visit_print_stmt(&mut self, stmt: &PrintStmt) -> T;
     fn visit_var_stmt(&mut self, stmt: &VarStmt) -> T;
 }
 #[derive(Debug, Clone)]
 pub enum Stmt {
+    Block(BlockStmt),
     Expression(ExpressionStmt),
     Print(PrintStmt),
     Var(VarStmt),
+}
+
+#[derive(Debug, Clone)]
+pub struct BlockStmt {
+    pub statements: Vec<Stmt>,
 }
 
 #[derive(Debug, Clone)]
@@ -33,6 +40,7 @@ pub struct VarStmt {
 impl Stmt {
     pub fn accept<T>(&self, visitor: &mut dyn StmtVisitor<T>) -> T {
         match self {
+            Stmt::Block(block_stmt) => visitor.visit_block_stmt(block_stmt),
             Stmt::Expression(expression_stmt) => visitor.visit_expression_stmt(expression_stmt),
             Stmt::Print(print_stmt) => visitor.visit_print_stmt(print_stmt),
             Stmt::Var(var_stmt) => visitor.visit_var_stmt(var_stmt),

@@ -5,7 +5,7 @@ use crate::{
         VariableExpr,
     },
     object::*,
-    stmt::{PrintStmt, Stmt, VarStmt},
+    stmt::*,
     token::{Token, TokenType},
 };
 
@@ -63,6 +63,11 @@ impl Parser {
         if self.matches(&[TokenType::Print]) {
             return self.print_statement();
         }
+        if self.matches(&[TokenType::LeftBrace]) {
+            return Ok(Stmt::Block(BlockStmt {
+                statements: self.block()?,
+            }));
+        }
         self.expression_statement()
     }
 
@@ -72,6 +77,16 @@ impl Parser {
         Ok(Stmt::Print(PrintStmt {
             expression: Box::new(value),
         }))
+    }
+
+    fn block(&mut self) -> Result<Vec<Stmt>, LoxError> {
+        let mut statements: Vec<Stmt> = Vec::new();
+
+        while !self.check(&TokenType::RightBrace) && !self.is_at_end() {
+            statements.push(self.declaration()?);
+        }
+        self.consume(TokenType::RightBrace, "Expect '}' after block.")?;
+        Ok(statements)
     }
 
     fn expression_statement(&mut self) -> Result<Stmt, LoxError> {

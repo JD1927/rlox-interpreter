@@ -15,6 +15,7 @@ fn main() -> io::Result<()> {
                 &output_dir,
                 "Stmt".to_string(),
                 &[
+                    "Block      : Vec<Stmt> statements".to_string(),
                     "Expression : Box<Expr> expression".to_string(),
                     "Print      : Box<Expr> expression".to_string(),
                     "Var        : Token name, Box<Expr> initializer".to_string(),
