@@ -30,6 +30,17 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
             Environment::new_enclosing(self.environment.clone()),
         )
     }
+
+    fn visit_if_stmt(&mut self, stmt: &IfStmt) -> Result<(), LoxError> {
+        let condition = self.evaluate(&stmt.condition)?;
+        if self.is_truthy(condition) {
+            self.execute(&stmt.then_branch)
+        } else if let Some(else_branch) = &stmt.else_branch {
+            self.execute(else_branch)
+        } else {
+            Ok(())
+        }
+    }
 }
 
 impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
