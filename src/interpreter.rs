@@ -165,17 +165,17 @@ impl Interpreter {
         statements: &[Stmt],
         environment: Environment,
     ) -> Result<(), LoxError> {
-        let previous_env = environment.clone();
-
+        // Stores current env until this point
+        let previous_env: Environment = environment.clone();
+        // Update current env with the same one to be updated
         self.environment = environment;
-        for statement in statements {
-            if let Err(err) = self.execute(statement) {
-                self.environment = previous_env;
-                return Err(err);
-            }
-        }
+        // Executes each statement until it reaches an error
+        let statement_fn = |statement| self.execute(statement);
+        let result: Result<(), LoxError> = statements.iter().try_for_each(statement_fn);
+        // Get back the previous environment;
+        self.environment = previous_env;
 
-        Ok(())
+        result
     }
 
     fn evaluate(&mut self, expr: &Expr) -> Result<Object, LoxError> {
