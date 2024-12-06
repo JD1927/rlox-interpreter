@@ -61,6 +61,10 @@ impl ExprVisitor<String> for AstPrinter {
     fn visit_assign_expr(&mut self, expr: &AssignExpr) -> String {
         todo!()
     }
+
+    fn visit_logical_expr(&mut self, expr: &LogicalExpr) -> String {
+        todo!()
+    }
 }
 
 #[cfg(test)]

@@ -6,6 +6,7 @@ pub trait ExprVisitor<T> {
     fn visit_binary_expr(&mut self, expr: &BinaryExpr) -> T;
     fn visit_grouping_expr(&mut self, expr: &GroupingExpr) -> T;
     fn visit_literal_expr(&mut self, expr: &LiteralExpr) -> T;
+    fn visit_logical_expr(&mut self, expr: &LogicalExpr) -> T;
     fn visit_unary_expr(&mut self, expr: &UnaryExpr) -> T;
     fn visit_comma_expr(&mut self, expr: &CommaExpr) -> T;
     fn visit_ternary_expr(&mut self, expr: &TernaryExpr) -> T;
@@ -17,6 +18,7 @@ pub enum Expr {
     Binary(BinaryExpr),
     Grouping(GroupingExpr),
     Literal(LiteralExpr),
+    Logical(LogicalExpr),
     Unary(UnaryExpr),
     Comma(CommaExpr),
     Ternary(TernaryExpr),
@@ -44,6 +46,13 @@ pub struct GroupingExpr {
 #[derive(Debug, Clone)]
 pub struct LiteralExpr {
     pub value: Object,
+}
+
+#[derive(Debug, Clone)]
+pub struct LogicalExpr {
+    pub left: Box<Expr>,
+    pub operator: Token,
+    pub right: Box<Expr>,
 }
 
 #[derive(Debug, Clone)]
@@ -77,6 +86,7 @@ impl Expr {
             Expr::Binary(binary_expr) => visitor.visit_binary_expr(binary_expr),
             Expr::Grouping(grouping_expr) => visitor.visit_grouping_expr(grouping_expr),
             Expr::Literal(literal_expr) => visitor.visit_literal_expr(literal_expr),
+            Expr::Logical(logical_expr) => visitor.visit_logical_expr(logical_expr),
             Expr::Unary(unary_expr) => visitor.visit_unary_expr(unary_expr),
             Expr::Comma(comma_expr) => visitor.visit_comma_expr(comma_expr),
             Expr::Ternary(ternary_expr) => visitor.visit_ternary_expr(ternary_expr),

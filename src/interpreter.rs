@@ -151,6 +151,20 @@ impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
         self.environment.assign(&expr.name, value.clone())?;
         Ok(value)
     }
+
+    fn visit_logical_expr(&mut self, expr: &LogicalExpr) -> Result<Object, LoxError> {
+        let left = self.evaluate(&expr.left)?;
+
+        if expr.operator.is(TokenType::Or) {
+            if self.is_truthy(left.clone()) {
+                return Ok(left);
+            }
+        } else if !self.is_truthy(left.clone()) {
+            return Ok(left);
+        }
+
+        self.evaluate(&expr.right)
+    }
 }
 
 impl Interpreter {
@@ -768,5 +782,43 @@ mod interpreter_tests {
         let result = interpreter.visit_assign_expr(&assign_expr);
         // Assert
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_logic_or() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+        let left = make_literal_bool(false);
+        let operator = make_token_operator(TokenType::Or, "or");
+        let right = make_literal_bool(true);
+        let logical_expr = LogicalExpr {
+            left,
+            operator,
+            right,
+        };
+        // Act
+        let result = interpreter.visit_logical_expr(&logical_expr);
+        // Assert
+        assert!(result.is_ok());
+        assert_eq!(result.ok().unwrap(), Object::Bool(true));
+    }
+
+    #[test]
+    fn test_logic_and() {
+        // Arrange
+        let mut interpreter = Interpreter::new();
+        let left = make_literal_bool(false);
+        let operator = make_token_operator(TokenType::And, "and");
+        let right = make_literal_bool(true);
+        let logical_expr = LogicalExpr {
+            left,
+            operator,
+            right,
+        };
+        // Act
+        let result = interpreter.visit_logical_expr(&logical_expr);
+        // Assert
+        assert!(result.is_ok());
+        assert_eq!(result.ok().unwrap(), Object::Bool(false));
     }
 }

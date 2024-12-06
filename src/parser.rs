@@ -1,8 +1,8 @@
 use crate::{
     error::LoxError,
     expr::{
-        AssignExpr, BinaryExpr, CommaExpr, Expr, GroupingExpr, LiteralExpr, TernaryExpr, UnaryExpr,
-        VariableExpr,
+        AssignExpr, BinaryExpr, CommaExpr, Expr, GroupingExpr, LiteralExpr, LogicalExpr,
+        TernaryExpr, UnaryExpr, VariableExpr,
     },
     object::*,
     stmt::*,
@@ -158,7 +158,7 @@ impl Parser {
 
     // Add ternary support with '?' and ':'
     fn ternary(&mut self) -> Result<Expr, LoxError> {
-        let mut expr = self.equality()?;
+        let mut expr = self.logic_or()?;
 
         // Check for "?" to begin a ternary expression
         while self.matches(&[TokenType::Question]) {
@@ -174,6 +174,37 @@ impl Parser {
                 then_branch: Box::new(then_branch),
                 else_branch: Box::new(else_branch),
             })
+        }
+        Ok(expr)
+    }
+
+    fn logic_or(&mut self) -> Result<Expr, LoxError> {
+        let mut expr = self.logic_and()?;
+
+        while self.matches(&[TokenType::Or]) {
+            let operator = self.previous();
+            let right = self.logic_and()?;
+            expr = Expr::Logical(LogicalExpr {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            });
+        }
+
+        Ok(expr)
+    }
+
+    fn logic_and(&mut self) -> Result<Expr, LoxError> {
+        let mut expr = self.equality()?;
+
+        while self.matches(&[TokenType::And]) {
+            let operator = self.previous();
+            let right = self.equality()?;
+            expr = Expr::Logical(LogicalExpr {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            });
         }
         Ok(expr)
     }
