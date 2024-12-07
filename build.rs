@@ -21,6 +21,7 @@ fn main() -> io::Result<()> {
                         .to_string(),
                     "Print      : Box<Expr> expression".to_string(),
                     "Var        : Token name, Box<Expr> initializer".to_string(),
+                    "While      : Box<Expr> condition, Box<Stmt> body".to_string(),
                 ],
             )?;
             define_ast(

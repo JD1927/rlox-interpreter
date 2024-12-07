@@ -1,3 +1,5 @@
+use std::mem::replace;
+
 use crate::{environment::*, error::LoxError, expr::*, object::*, stmt::*, token::*};
 
 pub struct Interpreter {
@@ -25,10 +27,8 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
     }
 
     fn visit_block_stmt(&mut self, stmt: &BlockStmt) -> Result<(), LoxError> {
-        self.execute_block(
-            &stmt.statements,
-            Environment::new_enclosing(self.environment.clone()),
-        )
+        let new_env = Environment::new_enclosing(self.environment.clone());
+        self.execute_block(&stmt.statements, new_env)
     }
 
     fn visit_if_stmt(&mut self, stmt: &IfStmt) -> Result<(), LoxError> {
@@ -40,6 +40,22 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
         } else {
             Ok(())
         }
+    }
+
+    fn visit_while_stmt(&mut self, stmt: &WhileStmt) -> Result<(), LoxError> {
+        loop {
+            let condition_is_truthy = {
+                let condition = self.evaluate(&stmt.condition)?;
+                self.is_truthy(condition)
+            };
+            // Break the loop when the condition is false
+            if !condition_is_truthy {
+                break;
+            }
+            // Execute the body of the loop
+            self.execute(&stmt.body)?;
+        }
+        Ok(())
     }
 }
 
@@ -191,14 +207,11 @@ impl Interpreter {
         environment: Environment,
     ) -> Result<(), LoxError> {
         // Stores current env until this point
-        let previous_env: Environment = environment.clone();
-        // Update current env with the same one to be updated
-        self.environment = environment;
+        let previous_env = replace(&mut self.environment, environment);
         // Executes each statement until it reaches an error
-        let statement_fn = |statement| self.execute(statement);
-        let result: Result<(), LoxError> = statements.iter().try_for_each(statement_fn);
+        let result = statements.iter().try_for_each(|stmt| self.execute(stmt));
         // Get back the previous environment;
-        self.environment = previous_env;
+        self.environment = replace(&mut self.environment, previous_env);
 
         result
     }

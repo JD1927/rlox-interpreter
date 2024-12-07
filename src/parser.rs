@@ -66,6 +66,9 @@ impl Parser {
         if self.matches(&[TokenType::Print]) {
             return self.print_statement();
         }
+        if self.matches(&[TokenType::While]) {
+            return self.while_statement();
+        }
         if self.matches(&[TokenType::LeftBrace]) {
             return Ok(Stmt::Block(BlockStmt {
                 statements: self.block()?,
@@ -100,6 +103,18 @@ impl Parser {
         }))
     }
 
+    fn while_statement(&mut self) -> Result<Stmt, LoxError> {
+        self.consume(TokenType::LeftParen, "Expect '(' after 'while'.")?;
+        let condition = self.expression()?;
+        self.consume(TokenType::RightParen, "Expect ')' after condition.")?;
+        let body = self.statement()?;
+
+        Ok(Stmt::While(WhileStmt {
+            condition: Box::new(condition),
+            body: Box::new(body),
+        }))
+    }
+
     fn block(&mut self) -> Result<Vec<Stmt>, LoxError> {
         let mut statements: Vec<Stmt> = Vec::new();
 
@@ -113,7 +128,7 @@ impl Parser {
     fn expression_statement(&mut self) -> Result<Stmt, LoxError> {
         let expr = self.expression()?;
         self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
-        Ok(Stmt::Print(PrintStmt {
+        Ok(Stmt::Expression(ExpressionStmt {
             expression: Box::new(expr),
         }))
     }

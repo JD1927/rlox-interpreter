@@ -8,6 +8,7 @@ pub trait StmtVisitor<T> {
     fn visit_if_stmt(&mut self, stmt: &IfStmt) -> T;
     fn visit_print_stmt(&mut self, stmt: &PrintStmt) -> T;
     fn visit_var_stmt(&mut self, stmt: &VarStmt) -> T;
+    fn visit_while_stmt(&mut self, stmt: &WhileStmt) -> T;
 }
 #[derive(Debug, Clone)]
 pub enum Stmt {
@@ -16,6 +17,7 @@ pub enum Stmt {
     If(IfStmt),
     Print(PrintStmt),
     Var(VarStmt),
+    While(WhileStmt),
 }
 
 #[derive(Debug, Clone)]
@@ -46,6 +48,12 @@ pub struct VarStmt {
     pub initializer: Box<Expr>,
 }
 
+#[derive(Debug, Clone)]
+pub struct WhileStmt {
+    pub condition: Box<Expr>,
+    pub body: Box<Stmt>,
+}
+
 impl Stmt {
     pub fn accept<T>(&self, visitor: &mut dyn StmtVisitor<T>) -> T {
         match self {
@@ -54,6 +62,7 @@ impl Stmt {
             Stmt::If(if_stmt) => visitor.visit_if_stmt(if_stmt),
             Stmt::Print(print_stmt) => visitor.visit_print_stmt(print_stmt),
             Stmt::Var(var_stmt) => visitor.visit_var_stmt(var_stmt),
+            Stmt::While(while_stmt) => visitor.visit_while_stmt(while_stmt),
         }
     }
 }

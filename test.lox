@@ -13,3 +13,8 @@ a multiline
 block
 comment
 *****************************/
+var myBool = 5;
+while (myBool > 0) {
+    print "I'm awesome";
+    myBool = myBool - 1;
+}
