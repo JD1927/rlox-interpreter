@@ -1,9 +1,9 @@
-use std::mem::replace;
+use std::{cell::RefCell, rc::Rc};
 
 use crate::{environment::*, error::LoxError, expr::*, object::*, stmt::*, token::*};
 
 pub struct Interpreter {
-    environment: Environment,
+    environment: EnvRef,
 }
 
 impl StmtVisitor<Result<(), LoxError>> for Interpreter {
@@ -22,12 +22,13 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
         let initializer = self.evaluate(&stmt.initializer)?;
 
         self.environment
+            .borrow_mut()
             .define(stmt.name.lexeme.clone(), initializer);
         Ok(())
     }
 
     fn visit_block_stmt(&mut self, stmt: &BlockStmt) -> Result<(), LoxError> {
-        let new_env = Environment::new_enclosing(self.environment.clone());
+        let new_env = Environment::new_enclosing(Rc::clone(&self.environment));
         self.execute_block(&stmt.statements, new_env)
     }
 
@@ -159,12 +160,14 @@ impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
     }
 
     fn visit_variable_expr(&mut self, expr: &VariableExpr) -> Result<Object, LoxError> {
-        self.environment.get(&expr.name)
+        self.environment.borrow_mut().get(&expr.name)
     }
 
     fn visit_assign_expr(&mut self, expr: &AssignExpr) -> Result<Object, LoxError> {
         let value = self.evaluate(&expr.value)?;
-        self.environment.assign(&expr.name, value.clone())?;
+        self.environment
+            .borrow_mut()
+            .assign(&expr.name, value.clone())?;
         Ok(value)
     }
 
@@ -204,15 +207,20 @@ impl Interpreter {
     fn execute_block(
         &mut self,
         statements: &[Stmt],
-        environment: Environment,
+        new_env: Rc<RefCell<Environment>>,
     ) -> Result<(), LoxError> {
         // Stores current env until this point
-        let previous_env = replace(&mut self.environment, environment);
+        let previous_env = Rc::clone(&self.environment);
+        println!("Cloning current environment");
+
+        // Update the interpreter's environment to the new one
+        self.environment = new_env;
+        println!("Setting environment to the new environment");
         // Executes each statement until it reaches an error
         let result = statements.iter().try_for_each(|stmt| self.execute(stmt));
         // Get back the previous environment;
-        self.environment = replace(&mut self.environment, previous_env);
-
+        self.environment = previous_env;
+        println!("Exiting block, restored previous environment");
         result
     }
 
@@ -700,7 +708,7 @@ mod interpreter_tests {
         let result = interpreter.visit_var_stmt(&var_stmt);
         // Assert
         assert!(result.is_ok());
-        assert!(interpreter.environment.get(&name).is_ok());
+        assert!(interpreter.environment.borrow_mut().get(&name).is_ok());
     }
 
     #[test]
@@ -718,8 +726,11 @@ mod interpreter_tests {
         let result = interpreter.visit_var_stmt(&var_stmt);
         // Assert
         assert!(result.is_ok());
-        assert!(interpreter.environment.get(&name).is_ok());
-        assert_eq!(interpreter.environment.get(&name).ok(), Some(Object::Nil));
+        assert!(interpreter.environment.borrow_mut().get(&name).is_ok());
+        assert_eq!(
+            interpreter.environment.borrow_mut().get(&name).ok(),
+            Some(Object::Nil)
+        );
     }
 
     #[test]

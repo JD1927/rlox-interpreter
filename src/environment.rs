@@ -1,26 +1,28 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{error::*, object::*, token::*};
+
+pub type EnvRef = Rc<RefCell<Environment>>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Environment {
     values: HashMap<String, Object>,
-    enclosing: Option<Box<Environment>>,
+    pub enclosing: Option<EnvRef>,
 }
 
 impl Environment {
-    pub fn new() -> Environment {
-        Environment {
+    pub fn new() -> EnvRef {
+        Rc::new(RefCell::new(Environment {
             values: HashMap::new(),
             enclosing: None,
-        }
+        }))
     }
 
-    pub fn new_enclosing(enclosing: Environment) -> Self {
-        Environment {
+    pub fn new_enclosing(enclosing: EnvRef) -> EnvRef {
+        Rc::new(RefCell::new(Environment {
             values: HashMap::new(),
-            enclosing: Some(Box::new(enclosing)),
-        }
+            enclosing: Some(enclosing),
+        }))
     }
 
     pub fn define(&mut self, name: String, value: Object) {
@@ -32,8 +34,8 @@ impl Environment {
             return Ok(value.clone());
         }
 
-        if let Some(env) = &self.enclosing {
-            return env.get(name);
+        if let Some(enclosing) = &self.enclosing {
+            return enclosing.borrow().get(name);
         }
 
         Err(LoxError::interpreter_error(
@@ -49,7 +51,7 @@ impl Environment {
         }
 
         if let Some(env) = self.enclosing.as_mut() {
-            return env.assign(name, value);
+            return env.borrow_mut().assign(name, value);
         }
 
         Err(LoxError::interpreter_error(
@@ -61,6 +63,7 @@ impl Environment {
 
 #[cfg(test)]
 mod environment_test {
+
     use crate::token::TokenType;
 
     use super::*;
@@ -77,34 +80,44 @@ mod environment_test {
     #[test]
     fn test_can_define_a_variable() {
         // Arrange
-        let mut env = Environment::new();
+        let env = Environment::new();
         // Act
-        env.define("my_variable".to_string(), Object::Number(123.0));
+        env.borrow_mut()
+            .define("my_variable".to_string(), Object::Number(123.0));
         // Assert
-        assert!(env.values.contains_key("my_variable"));
-        assert_eq!(env.values.get("my_variable"), Some(&Object::Number(123.0)));
+        assert!(env.borrow_mut().values.contains_key("my_variable"));
+        assert_eq!(
+            env.borrow_mut().values.get("my_variable"),
+            Some(&Object::Number(123.0))
+        );
     }
 
     #[test]
     fn test_can_redefine_a_variable() {
         // Arrange
-        let mut env = Environment::new();
+        let env = Environment::new();
         // Act
-        env.define("my_variable".to_string(), Object::Number(123.0));
-        env.define("my_variable".to_string(), Object::Bool(true));
+        env.borrow_mut()
+            .define("my_variable".to_string(), Object::Number(123.0));
+        env.borrow_mut()
+            .define("my_variable".to_string(), Object::Bool(true));
         // Assert
-        assert!(env.values.contains_key("my_variable"));
-        assert_eq!(env.values.get("my_variable"), Some(&Object::Bool(true)));
+        assert!(env.borrow_mut().values.contains_key("my_variable"));
+        assert_eq!(
+            env.borrow_mut().values.get("my_variable"),
+            Some(&Object::Bool(true))
+        );
     }
 
     #[test]
     fn test_can_get_variable() {
         // Arrange
-        let mut env = Environment::new();
-        env.define("my_variable".to_string(), Object::Number(123.0));
+        let env = Environment::new();
+        env.borrow_mut()
+            .define("my_variable".to_string(), Object::Number(123.0));
         let token = make_token_identifier("my_variable");
         // Act
-        let result = env.get(&token);
+        let result = env.borrow_mut().get(&token);
         // Assert
         assert!(result.is_ok());
         assert_eq!(result.ok().unwrap(), Object::Number(123.0));
@@ -116,7 +129,7 @@ mod environment_test {
         let env = Environment::new();
         let token = make_token_identifier("my_variable");
         // Act
-        let result = env.get(&token);
+        let result = env.borrow_mut().get(&token);
         // Assert
         assert!(result.is_err());
     }
@@ -124,24 +137,25 @@ mod environment_test {
     #[test]
     fn test_can_assign_value_to_variable() {
         // Arrange
-        let mut env = Environment::new();
-        env.define("my_variable".to_string(), Object::Number(123.0));
+        let env = Environment::new();
+        env.borrow_mut()
+            .define("my_variable".to_string(), Object::Number(123.0));
         let token = make_token_identifier("my_variable");
         // Act
-        let result = env.assign(&token, Object::Bool(true));
+        let result = env.borrow_mut().assign(&token, Object::Bool(true));
         // Assert
         assert!(result.is_ok());
         assert_eq!(result.ok(), Some(Object::Nil));
-        assert_eq!(env.get(&token).unwrap(), Object::Bool(true));
+        assert_eq!(env.borrow_mut().get(&token).unwrap(), Object::Bool(true));
     }
 
     #[test]
     fn test_cannot_assign_value_to_undefined_variable() {
         // Arrange
-        let mut env = Environment::new();
+        let env = Environment::new();
         let token = make_token_identifier("my_variable");
         // Act
-        let result = env.assign(&token, Object::Bool(true));
+        let result = env.borrow_mut().assign(&token, Object::Bool(true));
         // Assert
         assert!(result.is_err());
     }
@@ -150,25 +164,26 @@ mod environment_test {
     fn test_can_enclose_an_environment() {
         // Arrange
         let enclosing = Environment::new();
-        let env = Environment::new_enclosing(enclosing.clone());
+        let env = Environment::new_enclosing(Rc::clone(&enclosing));
         // Act
         // Assert
-        assert_eq!(env.enclosing.clone().unwrap(), Box::new(enclosing.clone()));
         assert_eq!(
-            env.enclosing.clone().unwrap().values,
-            Box::new(enclosing.clone()).values
+            env.borrow_mut().enclosing.clone().unwrap().borrow().values,
+            enclosing.borrow().values
         );
     }
 
     #[test]
     fn test_can_read_from_enclosed_environment() {
         // Arrange
-        let mut enclosing = Environment::new();
-        enclosing.define("my_variable".to_string(), Object::Number(123.0));
+        let enclosing = Environment::new();
+        enclosing
+            .borrow_mut()
+            .define("my_variable".to_string(), Object::Number(123.0));
         let token = make_token_identifier("my_variable");
-        let env = Environment::new_enclosing(enclosing.clone());
+        let env = Environment::new_enclosing(Rc::clone(&enclosing));
         // Act
-        let result = env.get(&token);
+        let result = env.borrow_mut().get(&token);
         // Assert
         assert!(result.is_ok(), "Expected 'Object' but got 'LoxError'.");
         assert_eq!(result.ok().unwrap(), Object::Number(123.0));
@@ -179,9 +194,9 @@ mod environment_test {
         // Arrange
         let enclosing = Environment::new();
         let token = make_token_identifier("my_variable");
-        let env = Environment::new_enclosing(enclosing.clone());
+        let env = Environment::new_enclosing(Rc::clone(&enclosing));
         // Act
-        let result = env.get(&token);
+        let result = env.borrow_mut().get(&token);
         // Assert
         assert!(result.is_err());
     }
@@ -190,17 +205,25 @@ mod environment_test {
     fn test_can_assign_value_to_variable_in_enclosing_environment() {
         // Arrange
         let token = make_token_identifier("my_variable");
-        let mut enclosing = Environment::new();
-        enclosing.define("my_variable".to_string(), Object::Number(123.0));
-        let mut env = Environment::new_enclosing(enclosing);
+        let enclosing = Environment::new();
+        enclosing
+            .borrow_mut()
+            .define("my_variable".to_string(), Object::Number(123.0));
+        let env = Environment::new_enclosing(Rc::clone(&enclosing));
         // Act
-        let result = env.assign(&token, Object::Bool(true));
+        let result = env.borrow_mut().assign(&token, Object::Bool(true));
         // Assert
         assert!(result.is_ok());
         assert_eq!(result.ok(), Some(Object::Nil));
-        assert_eq!(env.get(&token).unwrap(), Object::Bool(true));
+        assert_eq!(env.borrow_mut().get(&token).unwrap(), Object::Bool(true));
         assert_eq!(
-            env.enclosing.unwrap().get(&token).unwrap(),
+            env.borrow_mut()
+                .enclosing
+                .clone()
+                .unwrap()
+                .borrow_mut()
+                .get(&token)
+                .unwrap(),
             Object::Bool(true),
         );
     }
