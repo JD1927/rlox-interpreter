@@ -9,6 +9,7 @@ pub trait StmtVisitor<T> {
     fn visit_print_stmt(&mut self, stmt: &PrintStmt) -> T;
     fn visit_var_stmt(&mut self, stmt: &VarStmt) -> T;
     fn visit_while_stmt(&mut self, stmt: &WhileStmt) -> T;
+    fn visit_break_stmt(&mut self, stmt: &BreakStmt) -> T;
 }
 #[derive(Debug, Clone)]
 pub enum Stmt {
@@ -18,6 +19,7 @@ pub enum Stmt {
     Print(PrintStmt),
     Var(VarStmt),
     While(WhileStmt),
+    Break(BreakStmt),
 }
 
 #[derive(Debug, Clone)]
@@ -54,6 +56,11 @@ pub struct WhileStmt {
     pub body: Box<Stmt>,
 }
 
+#[derive(Debug, Clone)]
+pub struct BreakStmt {
+    pub keyword: Token,
+}
+
 impl Stmt {
     pub fn accept<T>(&self, visitor: &mut dyn StmtVisitor<T>) -> T {
         match self {
@@ -63,6 +70,7 @@ impl Stmt {
             Stmt::Print(print_stmt) => visitor.visit_print_stmt(print_stmt),
             Stmt::Var(var_stmt) => visitor.visit_var_stmt(var_stmt),
             Stmt::While(while_stmt) => visitor.visit_while_stmt(while_stmt),
+            Stmt::Break(break_stmt) => visitor.visit_break_stmt(break_stmt),
         }
     }
 }

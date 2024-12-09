@@ -13,15 +13,31 @@ a multiline
 block
 comment
 *****************************/
+print "Simplest while loop";
 var myBool = 5;
 while (myBool > 0) {
     print "I'm awesome";
     myBool = myBool - 1;
 }
+print "=============================";
 
 var a = 0;
 var temp;
-
-for (a = 1; a < 10; a = a + 1) {
+print "Simplest For loop";
+for (var a = 1; a < 10; a = a + 1) {
+  if (a == 8) {
+    break;
+  }
   print a;
 }
+print "=============================";
+print "Simplest while loop";
+var i = 1;
+while (i < 10) {
+  print i;
+  if (i == 5) {
+    break;
+  }
+  i = i + 1;
+}
+print "=============================";

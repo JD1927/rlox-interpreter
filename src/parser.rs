@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::{
     error::LoxError,
     expr::{
@@ -9,14 +11,20 @@ use crate::{
     token::{Token, TokenType},
 };
 
+#[derive(Debug)]
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
+    loop_depth: usize,
 }
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Parser {
-        Parser { tokens, current: 0 }
+        Parser {
+            tokens,
+            current: 0,
+            loop_depth: 0,
+        }
     }
 
     pub fn parse(&mut self) -> Result<Vec<Stmt>, LoxError> {
@@ -60,6 +68,9 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<Stmt, LoxError> {
+        if self.matches(&[TokenType::Break]) {
+            return self.break_statement();
+        }
         if self.matches(&[TokenType::For]) {
             return self.for_statement();
         }
@@ -78,6 +89,18 @@ impl Parser {
             }));
         }
         self.expression_statement()
+    }
+
+    fn break_statement(&mut self) -> Result<Stmt, LoxError> {
+        if self.loop_depth == 0 {
+            return Err(LoxError::parse_error(
+                self.previous(),
+                "'break' can only be used inside loops.",
+            ));
+        }
+        let keyword = self.previous().clone();
+        self.consume(TokenType::Semicolon, "Expect ';' after 'break'.")?;
+        Ok(Stmt::Break(BreakStmt { keyword }))
     }
 
     fn for_statement(&mut self) -> Result<Stmt, LoxError> {
@@ -109,7 +132,9 @@ impl Parser {
         self.consume(TokenType::RightParen, "Expect ')' after for clauses.")?;
 
         // Get body
+        self.loop_depth += 1;
         let mut body = self.statement()?;
+        self.loop_depth -= 1;
 
         // Check increment
         if let Some(value) = increment {
@@ -176,7 +201,9 @@ impl Parser {
         self.consume(TokenType::LeftParen, "Expect '(' after 'while'.")?;
         let condition = self.expression()?;
         self.consume(TokenType::RightParen, "Expect ')' after condition.")?;
+        self.loop_depth += 1;
         let body = self.statement()?;
+        self.loop_depth -= 1;
 
         Ok(Stmt::While(WhileStmt {
             condition: Box::new(condition),

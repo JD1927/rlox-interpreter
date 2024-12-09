@@ -2,11 +2,17 @@ use std::fmt;
 
 use crate::token::{Token, TokenType};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
+pub enum ControlFlowSignal {
+    Break,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum ErrorType {
     Lexical,
     Parser,
     Interpreter,
+    ControlFlow(ControlFlowSignal),
 }
 
 #[derive(Debug)]
@@ -59,6 +65,19 @@ impl LoxError {
         lox_error.error_type = Some(ErrorType::Interpreter);
         lox_error.report_location("");
         lox_error
+    }
+
+    pub fn break_signal(line: usize, message: &str) -> LoxError {
+        let mut lox_error = LoxError::error(line, message);
+        lox_error.error_type = Some(ErrorType::ControlFlow(ControlFlowSignal::Break));
+        lox_error
+    }
+
+    pub fn is_control_break(&self) -> bool {
+        matches!(
+            self.error_type,
+            Some(ErrorType::ControlFlow(ControlFlowSignal::Break))
+        )
     }
 }
 

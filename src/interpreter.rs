@@ -54,9 +54,21 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
                 break;
             }
             // Execute the body of the loop
-            self.execute(&stmt.body)?;
+            match self.execute(&stmt.body) {
+                Err(err) => {
+                    if err.is_control_break() {
+                        break;
+                    }
+                    return Err(err);
+                }
+                other => other?,
+            };
         }
         Ok(())
+    }
+
+    fn visit_break_stmt(&mut self, stmt: &BreakStmt) -> Result<(), LoxError> {
+        Err(LoxError::break_signal(stmt.keyword.line, ""))
     }
 }
 
