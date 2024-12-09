@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use crate::{environment::*, error::LoxError, expr::*, object::*, stmt::*, token::*};
 
 pub struct Interpreter {
-    environment: EnvRef,
+    environment: EnvironmentRef,
 }
 
 impl StmtVisitor<Result<(), LoxError>> for Interpreter {
@@ -211,16 +211,13 @@ impl Interpreter {
     ) -> Result<(), LoxError> {
         // Stores current env until this point
         let previous_env = Rc::clone(&self.environment);
-        println!("Cloning current environment");
 
         // Update the interpreter's environment to the new one
         self.environment = new_env;
-        println!("Setting environment to the new environment");
         // Executes each statement until it reaches an error
         let result = statements.iter().try_for_each(|stmt| self.execute(stmt));
         // Get back the previous environment;
         self.environment = previous_env;
-        println!("Exiting block, restored previous environment");
         result
     }
 

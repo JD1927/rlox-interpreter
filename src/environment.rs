@@ -2,23 +2,23 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{error::*, object::*, token::*};
 
-pub type EnvRef = Rc<RefCell<Environment>>;
+pub type EnvironmentRef = Rc<RefCell<Environment>>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Environment {
     values: HashMap<String, Object>,
-    pub enclosing: Option<EnvRef>,
+    pub enclosing: Option<EnvironmentRef>,
 }
 
 impl Environment {
-    pub fn new() -> EnvRef {
+    pub fn new() -> EnvironmentRef {
         Rc::new(RefCell::new(Environment {
             values: HashMap::new(),
             enclosing: None,
         }))
     }
 
-    pub fn new_enclosing(enclosing: EnvRef) -> EnvRef {
+    pub fn new_enclosing(enclosing: EnvironmentRef) -> EnvironmentRef {
         Rc::new(RefCell::new(Environment {
             values: HashMap::new(),
             enclosing: Some(enclosing),
