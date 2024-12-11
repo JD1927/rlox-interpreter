@@ -76,6 +76,10 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
     fn visit_break_stmt(&mut self, stmt: &BreakStmt) -> Result<(), LoxError> {
         Err(LoxError::break_signal(stmt.keyword.line, ""))
     }
+
+    fn visit_function_stmt(&mut self, stmt: &FunctionStmt) -> Result<(), LoxError> {
+        Ok(())
+    }
 }
 
 impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
