@@ -1,9 +1,7 @@
-use std::fmt;
-
 use crate::{
     error::LoxError,
     expr::{
-        AssignExpr, BinaryExpr, CommaExpr, Expr, GroupingExpr, LiteralExpr, LogicalExpr,
+        AssignExpr, BinaryExpr, CallExpr, CommaExpr, Expr, GroupingExpr, LiteralExpr, LogicalExpr,
         TernaryExpr, UnaryExpr, VariableExpr,
     },
     object::*,
@@ -191,7 +189,7 @@ impl Parser {
 
     fn print_statement(&mut self) -> Result<Stmt, LoxError> {
         let value = self.expression()?;
-        self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
+        self.consume(TokenType::Semicolon, "Expect ';' after 'print' value.")?;
         Ok(Stmt::Print(PrintStmt {
             expression: Box::new(value),
         }))
@@ -392,14 +390,46 @@ impl Parser {
     fn unary(&mut self) -> Result<Expr, LoxError> {
         if self.matches(&[TokenType::Bang, TokenType::Minus]) {
             let operator = self.previous();
-            let right = self.unary()?;
-            return Ok(Expr::Unary(UnaryExpr {
-                operator,
-                right: Box::new(right),
-            }));
+            let right = Box::new(self.unary()?);
+            return Ok(Expr::Unary(UnaryExpr { operator, right }));
         }
+        self.call()
+    }
 
-        self.primary()
+    fn finish_call(&mut self, callee: Box<Expr>) -> Result<Expr, LoxError> {
+        let mut arguments: Vec<Expr> = Vec::new();
+
+        if !self.check(&TokenType::RightParen) {
+            loop {
+                if arguments.len() >= 255 {
+                    LoxError::parse_error(self.peek(), "Cannot have more than 255 arguments.");
+                }
+                arguments.push(self.expression()?);
+                if !self.matches(&[TokenType::Comma]) {
+                    break;
+                }
+            }
+        }
+        let paren = self.consume(TokenType::RightParen, "Expect ')' after arguments.")?;
+
+        Ok(Expr::Call(CallExpr {
+            callee,
+            paren,
+            arguments,
+        }))
+    }
+
+    fn call(&mut self) -> Result<Expr, LoxError> {
+        let mut expr = self.primary()?;
+
+        loop {
+            if self.matches(&[TokenType::LeftParen]) {
+                expr = self.finish_call(Box::new(expr))?;
+            } else {
+                break;
+            }
+        }
+        Ok(expr)
     }
 
     fn primary(&mut self) -> Result<Expr, LoxError> {
@@ -429,14 +459,13 @@ impl Parser {
         }
 
         if self.matches(&[TokenType::LeftParen]) {
-            let expr = self.expression()?;
+            let expression = Box::new(self.expression()?);
             self.consume(TokenType::RightParen, "Expect ')' after expression.")?;
-            return Ok(Expr::Grouping(GroupingExpr {
-                expression: Box::new(expr),
-            }));
+            return Ok(Expr::Grouping(GroupingExpr { expression }));
         }
         Err(LoxError::parse_error(self.peek(), "Expect expression."))
     }
+
     // HELPERS
     fn matches(&mut self, token_types: &[TokenType]) -> bool {
         for token_type in token_types {

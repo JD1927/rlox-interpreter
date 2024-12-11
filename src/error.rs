@@ -12,6 +12,7 @@ pub enum ErrorType {
     Lexical,
     Parser,
     Interpreter,
+    SystemError,
     ControlFlow(ControlFlowSignal),
 }
 
@@ -42,6 +43,13 @@ impl LoxError {
     pub fn report_location(&self, location: &str) {
         let error = format!("[Line {}] - Error{}: {}", self.line, location, self.message);
         eprintln!("{}", error)
+    }
+
+    pub fn system_error(message: &str) -> LoxError {
+        let mut lox_error = LoxError::error(0, message);
+        lox_error.error_type = Some(ErrorType::SystemError);
+        eprintln!("Error: {message}");
+        lox_error
     }
 
     pub fn lexical_error(line: usize, message: &str) -> LoxError {

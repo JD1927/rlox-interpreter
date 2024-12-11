@@ -1,9 +1,17 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
-use crate::{environment::*, error::LoxError, expr::*, object::*, stmt::*, token::*};
+use crate::{
+    environment::*, error::*, expr::*, lox_callable::*, lox_native_function::*, object::*, stmt::*,
+    token::*,
+};
 
 pub struct Interpreter {
     environment: EnvironmentRef,
+    globals: EnvironmentRef,
 }
 
 impl StmtVisitor<Result<(), LoxError>> for Interpreter {
@@ -54,14 +62,12 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
                 break;
             }
             // Execute the body of the loop
-            match self.execute(&stmt.body) {
-                Err(err) => {
-                    if err.is_control_break() {
-                        break;
-                    }
-                    return Err(err);
+            // If there is an error or break statement it does an exit
+            if let Err(err) = self.execute(&stmt.body) {
+                if err.is_control_break() {
+                    break;
                 }
-                other => other?,
+                return Err(err);
             };
         }
         Ok(())
@@ -196,12 +202,52 @@ impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
 
         self.evaluate(&expr.right)
     }
+
+    fn visit_call_expr(&mut self, expr: &CallExpr) -> Result<Object, LoxError> {
+        let callee = self.evaluate(&expr.callee)?;
+
+        let mut arguments: Vec<Object> = Vec::new();
+
+        for argument in &expr.arguments {
+            arguments.push(self.evaluate(argument)?);
+        }
+
+        match callee {
+            Object::Function(mut function) => {
+                function.check_arity(arguments.len(), &expr.paren)?;
+                function.call(self, arguments)
+            }
+            Object::NativeFunction(mut native_function) => {
+                native_function.check_arity(arguments.len(), &expr.paren)?;
+                native_function.call(self, arguments)
+            }
+            _ => Err(LoxError::interpreter_error(
+                expr.paren.line,
+                "Can only call functions and classes.",
+            )),
+        }
+    }
 }
 
 impl Interpreter {
     pub fn new() -> Interpreter {
+        let globals = Environment::new();
+        globals.borrow_mut().define(
+            "clock".to_string(),
+            Object::NativeFunction(NativeFunction {
+                arity: 0,
+                callable: |_, _| match SystemTime::now().duration_since(UNIX_EPOCH) {
+                    Ok(timestamp) => Ok(Object::Number(timestamp.as_millis() as f64)),
+                    Err(err) => Err(LoxError::system_error(&format!(
+                        "Clock returned an invalid duration: {}",
+                        &err.to_string()
+                    ))),
+                },
+            }),
+        );
         Interpreter {
-            environment: Environment::new(),
+            environment: globals.clone(),
+            globals,
         }
     }
 

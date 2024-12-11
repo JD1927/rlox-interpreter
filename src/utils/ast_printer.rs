@@ -37,6 +37,8 @@ impl ExprVisitor<String> for AstPrinter {
             Object::Number(value) => value.to_string(),
             Object::Bool(value) => value.to_string(),
             Object::Nil => String::from("nil"),
+            Object::Function(function) => todo!(),
+            Object::NativeFunction(native_function) => todo!(),
         }
     }
     fn visit_unary_expr(&mut self, expr: &UnaryExpr) -> String {
@@ -63,6 +65,10 @@ impl ExprVisitor<String> for AstPrinter {
     }
 
     fn visit_logical_expr(&mut self, expr: &LogicalExpr) -> String {
+        todo!()
+    }
+
+    fn visit_call_expr(&mut self, expr: &CallExpr) -> String {
         todo!()
     }
 }

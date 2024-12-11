@@ -31,6 +31,7 @@ fn main() -> io::Result<()> {
                 &[
                     "Assign   : Token name, Box<Expr> value".to_string(),
                     "Binary   : Box<Expr> left, Token operator, Box<Expr> right".to_string(),
+                    "Call     : Box<Expr> callee, Token paren, Vec<Expr> arguments".to_string(),
                     "Grouping : Box<Expr> expression".to_string(),
                     "Literal  : Object value".to_string(),
                     "Logical  : Box<Expr> left, Token operator, Box<Expr> right".to_string(),

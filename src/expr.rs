@@ -4,6 +4,7 @@ use crate::object::*;
 pub trait ExprVisitor<T> {
     fn visit_assign_expr(&mut self, expr: &AssignExpr) -> T;
     fn visit_binary_expr(&mut self, expr: &BinaryExpr) -> T;
+    fn visit_call_expr(&mut self, expr: &CallExpr) -> T;
     fn visit_grouping_expr(&mut self, expr: &GroupingExpr) -> T;
     fn visit_literal_expr(&mut self, expr: &LiteralExpr) -> T;
     fn visit_logical_expr(&mut self, expr: &LogicalExpr) -> T;
@@ -16,6 +17,7 @@ pub trait ExprVisitor<T> {
 pub enum Expr {
     Assign(AssignExpr),
     Binary(BinaryExpr),
+    Call(CallExpr),
     Grouping(GroupingExpr),
     Literal(LiteralExpr),
     Logical(LogicalExpr),
@@ -36,6 +38,13 @@ pub struct BinaryExpr {
     pub left: Box<Expr>,
     pub operator: Token,
     pub right: Box<Expr>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CallExpr {
+    pub callee: Box<Expr>,
+    pub paren: Token,
+    pub arguments: Vec<Expr>,
 }
 
 #[derive(Debug, Clone)]
@@ -84,6 +93,7 @@ impl Expr {
         match self {
             Expr::Assign(assign_expr) => visitor.visit_assign_expr(assign_expr),
             Expr::Binary(binary_expr) => visitor.visit_binary_expr(binary_expr),
+            Expr::Call(call_expr) => visitor.visit_call_expr(call_expr),
             Expr::Grouping(grouping_expr) => visitor.visit_grouping_expr(grouping_expr),
             Expr::Literal(literal_expr) => visitor.visit_literal_expr(literal_expr),
             Expr::Logical(logical_expr) => visitor.visit_logical_expr(logical_expr),
