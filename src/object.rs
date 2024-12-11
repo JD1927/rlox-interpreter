@@ -1,13 +1,15 @@
 use std::{cmp::Ordering, fmt, ops::*};
 
-use crate::{lox_function::Function, lox_native_function::NativeFunction};
+use crate::{
+    lox_callable::LoxCallable, lox_function::LoxFunction, lox_native_function::NativeFunction,
+};
 
 #[derive(Debug, Clone)]
 pub enum Object {
     String(String),
     Number(f64),
     Bool(bool),
-    Function(Function),
+    Function(LoxFunction),
     NativeFunction(NativeFunction),
     Nil,
 }
@@ -19,8 +21,8 @@ impl fmt::Display for Object {
             Object::String(val) => write!(f, "\"{val}\""),
             Object::Bool(val) => write!(f, "{val}"),
             Object::Nil => write!(f, "nil"),
-            Object::Function(_val) => write!(f, "nil"),
-            Object::NativeFunction(_native_function) => write!(f, "nil"),
+            Object::Function(function) => write!(f, "{}", function.to_string()),
+            Object::NativeFunction(native_function) => write!(f, "{}", native_function.to_string()),
         }
     }
 }

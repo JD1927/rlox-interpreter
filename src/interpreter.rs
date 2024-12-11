@@ -5,13 +5,13 @@ use std::{
 };
 
 use crate::{
-    environment::*, error::*, expr::*, lox_callable::*, lox_native_function::*, object::*, stmt::*,
-    token::*,
+    environment::*, error::*, expr::*, lox_callable::*, lox_function::LoxFunction,
+    lox_native_function::*, object::*, stmt::*, token::*,
 };
 
 pub struct Interpreter {
     environment: EnvironmentRef,
-    globals: EnvironmentRef,
+    pub globals: EnvironmentRef,
 }
 
 impl StmtVisitor<Result<(), LoxError>> for Interpreter {
@@ -78,6 +78,10 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
     }
 
     fn visit_function_stmt(&mut self, stmt: &FunctionStmt) -> Result<(), LoxError> {
+        let function = LoxFunction::new(stmt);
+        self.environment
+            .borrow_mut()
+            .define(stmt.name.lexeme.clone(), Object::Function(function));
         Ok(())
     }
 }
@@ -239,6 +243,7 @@ impl Interpreter {
         globals.borrow_mut().define(
             "clock".to_string(),
             Object::NativeFunction(NativeFunction {
+                name: "clock".to_string(),
                 arity: 0,
                 callable: |_, _| match SystemTime::now().duration_since(UNIX_EPOCH) {
                     Ok(timestamp) => Ok(Object::Number(timestamp.as_millis() as f64)),
@@ -266,7 +271,7 @@ impl Interpreter {
         stmt.accept(self)
     }
 
-    fn execute_block(
+    pub fn execute_block(
         &mut self,
         statements: &[Stmt],
         new_env: Rc<RefCell<Environment>>,

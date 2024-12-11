@@ -3,16 +3,11 @@ use crate::{
     token::Token,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct NativeFunction {
+    pub name: String,
     pub arity: usize,
     pub callable: fn(&mut Interpreter, Vec<Object>) -> Result<Object, LoxError>,
-}
-
-impl NativeFunction {
-    pub fn to_string() -> String {
-        String::from("<native fn>")
-    }
 }
 
 impl LoxCallable for NativeFunction {
@@ -21,7 +16,7 @@ impl LoxCallable for NativeFunction {
         interpreter: &mut Interpreter,
         arguments: Vec<Object>,
     ) -> Result<Object, LoxError> {
-        Ok((self.callable)(interpreter, arguments)?)
+        (self.callable)(interpreter, arguments)
     }
 
     fn arity(&self) -> usize {
@@ -36,5 +31,9 @@ impl LoxCallable for NativeFunction {
             ));
         }
         Ok(())
+    }
+
+    fn to_string(&self) -> String {
+        format!("<fn native {}>", &self.name)
     }
 }

@@ -8,4 +8,5 @@ pub trait LoxCallable {
         arguments: Vec<Object>,
     ) -> Result<Object, LoxError>;
     fn check_arity(&self, arguments_len: usize, current_token: &Token) -> Result<(), LoxError>;
+    fn to_string(&self) -> String;
 }
