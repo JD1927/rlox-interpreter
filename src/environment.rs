@@ -29,7 +29,7 @@ impl Environment {
         self.values.insert(name, value);
     }
 
-    pub fn get(&self, name: &Token) -> Result<Object, LoxError> {
+    pub fn get(&self, name: &Token) -> Result<Object, LoxErrorResult> {
         if let Some(value) = self.values.get(&name.lexeme) {
             return Ok(value.clone());
         }
@@ -38,13 +38,13 @@ impl Environment {
             return enclosing.borrow().get(name);
         }
 
-        Err(LoxError::interpreter_error(
+        Err(LoxErrorResult::interpreter_error(
             name.line,
             &format!("Undefined variable '{}'.", name.lexeme),
         ))
     }
 
-    pub fn assign(&mut self, name: &Token, value: Object) -> Result<Object, LoxError> {
+    pub fn assign(&mut self, name: &Token, value: Object) -> Result<Object, LoxErrorResult> {
         if self.values.contains_key(&name.lexeme) {
             self.values.insert(name.lexeme.clone(), value);
             return Ok(Object::Nil);
@@ -54,7 +54,7 @@ impl Environment {
             return env.borrow_mut().assign(name, value);
         }
 
-        Err(LoxError::interpreter_error(
+        Err(LoxErrorResult::interpreter_error(
             name.line,
             &format!("Undefined variable '{}'.", name.lexeme),
         ))
@@ -185,7 +185,10 @@ mod environment_test {
         // Act
         let result = env.borrow_mut().get(&token);
         // Assert
-        assert!(result.is_ok(), "Expected 'Object' but got 'LoxError'.");
+        assert!(
+            result.is_ok(),
+            "Expected 'Object' but got 'LoxErrorResult'."
+        );
         assert_eq!(result.ok().unwrap(), Object::Number(123.0));
     }
 

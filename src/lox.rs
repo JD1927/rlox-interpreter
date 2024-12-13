@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use crate::{error::LoxError, interpreter::Interpreter, parser::Parser, scanner::Scanner};
+use crate::{error::LoxErrorResult, interpreter::Interpreter, parser::Parser, scanner::Scanner};
 
 pub struct Lox {
     pub interpreter: Interpreter,
@@ -30,7 +30,7 @@ impl Lox {
         }
     }
 
-    fn run(&mut self, source: String) -> Result<(), LoxError> {
+    fn run(&mut self, source: String) -> Result<(), LoxErrorResult> {
         // Lexical Analysis
         let mut scanner = Scanner::new(source);
         let tokens = scanner.scan_tokens()?;

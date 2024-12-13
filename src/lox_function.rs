@@ -1,6 +1,6 @@
 use crate::{
-    environment::Environment, error::LoxError, interpreter::Interpreter, lox_callable::*,
-    object::Object, stmt::*, token::Token,
+    environment::Environment, error::*, interpreter::Interpreter, lox_callable::*, object::Object,
+    stmt::*, token::Token,
 };
 
 #[derive(Debug, Clone)]
@@ -21,7 +21,7 @@ impl LoxCallable for LoxFunction {
         &mut self,
         interpreter: &mut Interpreter,
         arguments: Vec<Object>,
-    ) -> Result<Object, LoxError> {
+    ) -> Result<Object, LoxErrorResult> {
         let environment = Environment::new_enclosing(interpreter.globals.clone());
         for (idx, param) in self.declaration.params.iter().enumerate() {
             environment
@@ -30,12 +30,8 @@ impl LoxCallable for LoxFunction {
         }
         match interpreter.execute_block(&self.declaration.body, environment) {
             Ok(_) => Ok(Object::Nil),
-            Err(err) => {
-                if err.is_control_return() {
-                    return Ok(err.control_flow_value);
-                }
-                Err(err)
-            }
+            Err(LoxErrorResult::ControlFlowReturn { value }) => Ok(value),
+            Err(err) => Err(err),
         }
     }
 
@@ -43,9 +39,9 @@ impl LoxCallable for LoxFunction {
         self.declaration.params.len()
     }
 
-    fn check_arity(&self, args_len: usize, current_token: &Token) -> Result<(), LoxError> {
+    fn check_arity(&self, args_len: usize, current_token: &Token) -> Result<(), LoxErrorResult> {
         if args_len != self.arity() {
-            return Err(LoxError::interpreter_error(
+            return Err(LoxErrorResult::interpreter_error(
                 current_token.line,
                 &format!("Expected {} arguments but got {}.", self.arity(), args_len),
             ));

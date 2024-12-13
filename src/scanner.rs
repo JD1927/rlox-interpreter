@@ -1,4 +1,4 @@
-use crate::{error::LoxError, object::Object, token::*};
+use crate::{error::LoxErrorResult, object::Object, token::*};
 
 pub struct Scanner {
     source: Vec<char>,
@@ -21,12 +21,12 @@ impl Scanner {
         }
     }
 
-    pub fn scan_tokens(&mut self) -> Result<Vec<Token>, LoxError> {
+    pub fn scan_tokens(&mut self) -> Result<Vec<Token>, LoxErrorResult> {
         while !self.is_at_end() {
             self.start = self.current;
             match self.scan_token() {
                 Ok(_) => {}
-                Err(e) => e.report_column(&self.column.to_string()),
+                Err(e) => e.report(),
             }
         }
 
@@ -39,7 +39,7 @@ impl Scanner {
         Ok(self.tokens.clone())
     }
 
-    fn scan_token(&mut self) -> Result<(), LoxError> {
+    fn scan_token(&mut self) -> Result<(), LoxErrorResult> {
         let _char = self.advance();
 
         match _char {
@@ -111,7 +111,10 @@ impl Scanner {
                 } else if _char.is_ascii_alphabetic() || _char == '_' {
                     self.add_identifier();
                 } else {
-                    return Err(LoxError::lexical_error(self.line, "Unexpected character."));
+                    return Err(LoxErrorResult::lexical_error(
+                        self.line,
+                        "Unexpected character.",
+                    ));
                 }
             }
         }
@@ -131,7 +134,7 @@ impl Scanner {
         true
     }
 
-    fn scan_block_comment(&mut self) -> Result<(), LoxError> {
+    fn scan_block_comment(&mut self) -> Result<(), LoxErrorResult> {
         while !self.is_at_end() {
             if self.match_next_with('*') && self.match_next_with('/') {
                 // End of current block comment */
@@ -146,7 +149,7 @@ impl Scanner {
             }
         }
         // Unclosed block comment error
-        Err(LoxError::lexical_error(
+        Err(LoxErrorResult::lexical_error(
             self.line,
             "Unterminated block comment.",
         ))
@@ -189,7 +192,7 @@ impl Scanner {
             .push(Token::new(token_type, lexeme, Object::Nil, self.line));
     }
 
-    fn add_string(&mut self) -> Result<(), LoxError> {
+    fn add_string(&mut self) -> Result<(), LoxErrorResult> {
         while self.peek() != '"' && !self.is_at_end() {
             if self.peek() == '\n' {
                 self.line += 1;
@@ -199,7 +202,10 @@ impl Scanner {
         }
 
         if self.is_at_end() {
-            return Err(LoxError::lexical_error(self.line, "Unterminated string."));
+            return Err(LoxErrorResult::lexical_error(
+                self.line,
+                "Unterminated string.",
+            ));
         }
         // The closing quote "
         self.advance();
