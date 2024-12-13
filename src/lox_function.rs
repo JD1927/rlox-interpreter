@@ -28,8 +28,15 @@ impl LoxCallable for LoxFunction {
                 .borrow_mut()
                 .define(param.lexeme.clone(), arguments[idx].clone());
         }
-        interpreter.execute_block(&self.declaration.body, environment)?;
-        Ok(Object::Nil)
+        match interpreter.execute_block(&self.declaration.body, environment) {
+            Ok(_) => Ok(Object::Nil),
+            Err(err) => {
+                if err.is_control_return() {
+                    return Ok(err.control_flow_value);
+                }
+                Err(err)
+            }
+        }
     }
 
     fn arity(&self) -> usize {

@@ -1,10 +1,14 @@
 use std::fmt;
 
-use crate::token::{Token, TokenType};
+use crate::{
+    object::Object,
+    token::{Token, TokenType},
+};
 
 #[derive(Debug, PartialEq)]
 pub enum ControlFlowSignal {
     Break,
+    Return,
 }
 
 #[derive(Debug, PartialEq)]
@@ -21,14 +25,17 @@ pub struct LoxError {
     pub line: usize,
     pub message: String,
     pub error_type: Option<ErrorType>,
+    pub control_flow_value: Object,
 }
 
+// TODO: Implement better the errors and the control flow "errors", by using an enum like LoxResult
 impl LoxError {
     pub fn error(line: usize, message: &str) -> LoxError {
         LoxError {
             line,
             message: message.to_string(),
             error_type: None,
+            control_flow_value: Object::Nil,
         }
     }
 
@@ -81,10 +88,24 @@ impl LoxError {
         lox_error
     }
 
+    pub fn return_signal(line: usize, message: &str, value: Object) -> LoxError {
+        let mut lox_error = LoxError::error(line, message);
+        lox_error.error_type = Some(ErrorType::ControlFlow(ControlFlowSignal::Return));
+        lox_error.control_flow_value = value;
+        lox_error
+    }
+
     pub fn is_control_break(&self) -> bool {
         matches!(
             self.error_type,
             Some(ErrorType::ControlFlow(ControlFlowSignal::Break))
+        )
+    }
+
+    pub fn is_control_return(&self) -> bool {
+        matches!(
+            self.error_type,
+            Some(ErrorType::ControlFlow(ControlFlowSignal::Return { .. }))
         )
     }
 }

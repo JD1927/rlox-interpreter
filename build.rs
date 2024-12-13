@@ -21,6 +21,7 @@ fn main() -> io::Result<()> {
                     "If         : Box<Expr> condition, Box<Stmt> then_branch, Option<Box<Stmt>> else_branch"
                         .to_string(),
                     "Print      : Box<Expr> expression".to_string(),
+                    "Return     : Token keyword, Option<Box<Expr>> value".to_string(),
                     "Var        : Token name, Box<Expr> initializer".to_string(),
                     "While      : Box<Expr> condition, Box<Stmt> body".to_string(),
                     "Break      : Token keyword".to_string(),

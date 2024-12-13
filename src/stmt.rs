@@ -8,6 +8,7 @@ pub trait StmtVisitor<T> {
     fn visit_function_stmt(&mut self, stmt: &FunctionStmt) -> T;
     fn visit_if_stmt(&mut self, stmt: &IfStmt) -> T;
     fn visit_print_stmt(&mut self, stmt: &PrintStmt) -> T;
+    fn visit_return_stmt(&mut self, stmt: &ReturnStmt) -> T;
     fn visit_var_stmt(&mut self, stmt: &VarStmt) -> T;
     fn visit_while_stmt(&mut self, stmt: &WhileStmt) -> T;
     fn visit_break_stmt(&mut self, stmt: &BreakStmt) -> T;
@@ -19,6 +20,7 @@ pub enum Stmt {
     Function(FunctionStmt),
     If(IfStmt),
     Print(PrintStmt),
+    Return(ReturnStmt),
     Var(VarStmt),
     While(WhileStmt),
     Break(BreakStmt),
@@ -54,6 +56,12 @@ pub struct PrintStmt {
 }
 
 #[derive(Debug, Clone)]
+pub struct ReturnStmt {
+    pub keyword: Token,
+    pub value: Option<Box<Expr>>,
+}
+
+#[derive(Debug, Clone)]
 pub struct VarStmt {
     pub name: Token,
     pub initializer: Box<Expr>,
@@ -78,6 +86,7 @@ impl Stmt {
             Stmt::Function(function_stmt) => visitor.visit_function_stmt(function_stmt),
             Stmt::If(if_stmt) => visitor.visit_if_stmt(if_stmt),
             Stmt::Print(print_stmt) => visitor.visit_print_stmt(print_stmt),
+            Stmt::Return(return_stmt) => visitor.visit_return_stmt(return_stmt),
             Stmt::Var(var_stmt) => visitor.visit_var_stmt(var_stmt),
             Stmt::While(while_stmt) => visitor.visit_while_stmt(while_stmt),
             Stmt::Break(break_stmt) => visitor.visit_break_stmt(break_stmt),

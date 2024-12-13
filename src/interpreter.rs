@@ -84,6 +84,15 @@ impl StmtVisitor<Result<(), LoxError>> for Interpreter {
             .define(stmt.name.lexeme.clone(), Object::Function(function));
         Ok(())
     }
+
+    fn visit_return_stmt(&mut self, stmt: &ReturnStmt) -> Result<(), LoxError> {
+        let return_value = if let Some(value) = &stmt.value {
+            self.evaluate(value)?
+        } else {
+            Object::Nil
+        };
+        Err(LoxError::return_signal(stmt.keyword.line, "", return_value))
+    }
 }
 
 impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
