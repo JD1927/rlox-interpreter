@@ -17,3 +17,18 @@ var c = "global c";
 print a;
 print b;
 print c;
+
+fun sayHi(first, last) {
+  print "Hi, " + first + " " + last + "!";
+}
+
+sayHi("Dear", "Reader");
+
+var num = 12;
+var global = 3;
+
+fun foo(num) {
+  print num * global;
+}
+
+foo(num);

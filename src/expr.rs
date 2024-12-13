@@ -9,7 +9,6 @@ pub trait ExprVisitor<T> {
     fn visit_literal_expr(&mut self, expr: &LiteralExpr) -> T;
     fn visit_logical_expr(&mut self, expr: &LogicalExpr) -> T;
     fn visit_unary_expr(&mut self, expr: &UnaryExpr) -> T;
-    fn visit_comma_expr(&mut self, expr: &CommaExpr) -> T;
     fn visit_ternary_expr(&mut self, expr: &TernaryExpr) -> T;
     fn visit_variable_expr(&mut self, expr: &VariableExpr) -> T;
 }
@@ -22,7 +21,6 @@ pub enum Expr {
     Literal(LiteralExpr),
     Logical(LogicalExpr),
     Unary(UnaryExpr),
-    Comma(CommaExpr),
     Ternary(TernaryExpr),
     Variable(VariableExpr),
 }
@@ -71,12 +69,6 @@ pub struct UnaryExpr {
 }
 
 #[derive(Debug, Clone)]
-pub struct CommaExpr {
-    pub left: Box<Expr>,
-    pub right: Box<Expr>,
-}
-
-#[derive(Debug, Clone)]
 pub struct TernaryExpr {
     pub condition: Box<Expr>,
     pub then_branch: Box<Expr>,
@@ -98,7 +90,6 @@ impl Expr {
             Expr::Literal(literal_expr) => visitor.visit_literal_expr(literal_expr),
             Expr::Logical(logical_expr) => visitor.visit_logical_expr(logical_expr),
             Expr::Unary(unary_expr) => visitor.visit_unary_expr(unary_expr),
-            Expr::Comma(comma_expr) => visitor.visit_comma_expr(comma_expr),
             Expr::Ternary(ternary_expr) => visitor.visit_ternary_expr(ternary_expr),
             Expr::Variable(variable_expr) => visitor.visit_variable_expr(variable_expr),
         }

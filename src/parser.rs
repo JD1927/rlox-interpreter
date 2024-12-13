@@ -1,13 +1,4 @@
-use crate::{
-    error::LoxError,
-    expr::{
-        AssignExpr, BinaryExpr, CallExpr, CommaExpr, Expr, GroupingExpr, LiteralExpr, LogicalExpr,
-        TernaryExpr, UnaryExpr, VariableExpr,
-    },
-    object::*,
-    stmt::*,
-    token::{Token, TokenType},
-};
+use crate::{error::*, expr::*, object::*, stmt::*, token::*};
 
 #[derive(Debug)]
 pub struct Parser {
@@ -262,23 +253,7 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Result<Expr, LoxError> {
-        self.comma()
-    }
-
-    // Add comma operator
-    fn comma(&mut self) -> Result<Expr, LoxError> {
-        let mut expr = self.assignment()?;
-
-        // Allow multiple comma-separated expressions!
-        while self.matches(&[TokenType::Comma]) {
-            let right = self.assignment()?;
-            expr = Expr::Comma(CommaExpr {
-                left: Box::new(expr),
-                right: Box::new(right),
-            });
-        }
-
-        Ok(expr)
+        self.assignment()
     }
 
     fn assignment(&mut self) -> Result<Expr, LoxError> {
@@ -444,6 +419,7 @@ impl Parser {
                 }
             }
         }
+
         let paren = self.consume(TokenType::RightParen, "Expect ')' after arguments.")?;
 
         Ok(Expr::Call(CallExpr {

@@ -37,7 +37,6 @@ fn main() -> io::Result<()> {
                     "Literal  : Object value".to_string(),
                     "Logical  : Box<Expr> left, Token operator, Box<Expr> right".to_string(),
                     "Unary    : Token operator, Box<Expr> right".to_string(),
-                    "Comma    : Box<Expr> left, Box<Expr> right".to_string(),
                     "Ternary  : Box<Expr> condition, Box<Expr> then_branch, Box<Expr> else_branch"
                         .to_string(),
                     "Variable : Token name".to_string(),

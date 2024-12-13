@@ -44,9 +44,7 @@ impl ExprVisitor<String> for AstPrinter {
     fn visit_unary_expr(&mut self, expr: &UnaryExpr) -> String {
         self.parenthesize(&expr.operator.lexeme, vec![&expr.right])
     }
-    fn visit_comma_expr(&mut self, expr: &CommaExpr) -> String {
-        format!("({}, {})", expr.left.accept(self), expr.right.accept(self))
-    }
+
     fn visit_ternary_expr(&mut self, expr: &TernaryExpr) -> String {
         format!(
             "({} ? {} : {})",

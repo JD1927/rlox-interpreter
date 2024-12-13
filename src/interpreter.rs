@@ -172,11 +172,6 @@ impl ExprVisitor<Result<Object, LoxError>> for Interpreter {
         }
     }
 
-    fn visit_comma_expr(&mut self, expr: &CommaExpr) -> Result<Object, LoxError> {
-        self.evaluate(&expr.left)?;
-        self.evaluate(&expr.right)
-    }
-
     fn visit_ternary_expr(&mut self, expr: &TernaryExpr) -> Result<Object, LoxError> {
         let condition = self.evaluate(&expr.condition)?;
         match self.is_truthy(condition) {
@@ -690,25 +685,6 @@ mod interpreter_tests {
 
         // Act
         let result = interpreter.visit_ternary_expr(&ternary);
-        // Assert
-        assert!(result.is_ok());
-        assert_eq!(
-            result.ok(),
-            Some(Object::String("Ohhh yeaahhh!".to_string()))
-        );
-    }
-
-    #[test]
-    fn test_comma_operator() {
-        // Arrange
-        let mut interpreter = Interpreter::new();
-        let ternary: CommaExpr = CommaExpr {
-            left: make_literal_number(69.0),
-            right: make_literal_string("Ohhh yeaahhh!"),
-        };
-
-        // Act
-        let result = interpreter.visit_comma_expr(&ternary);
         // Assert
         assert!(result.is_ok());
         assert_eq!(
