@@ -1,0 +1,8 @@
+class myClass {
+  method() {
+    print "inside method";
+  }
+}
+
+var test = myClass();
+test.method();
