@@ -1,17 +1,21 @@
+use std::rc::Rc;
+
 use crate::{
-    environment::Environment, error::*, interpreter::Interpreter, lox_callable::*, object::Object,
-    stmt::*, token::Token,
+    environment::*, error::*, interpreter::Interpreter, lox_callable::*, object::Object, stmt::*,
+    token::Token,
 };
 
 #[derive(Debug, Clone)]
 pub struct LoxFunction {
     declaration: Box<FunctionStmt>,
+    closure: EnvironmentRef,
 }
 
 impl LoxFunction {
-    pub fn new(declaration: &FunctionStmt) -> Self {
+    pub fn new(declaration: &FunctionStmt, closure: EnvironmentRef) -> Self {
         LoxFunction {
             declaration: Box::new(declaration.clone()),
+            closure,
         }
     }
 }
@@ -22,7 +26,7 @@ impl LoxCallable for LoxFunction {
         interpreter: &mut Interpreter,
         arguments: Vec<Object>,
     ) -> Result<Object, LoxErrorResult> {
-        let environment = Environment::new_enclosing(interpreter.globals.clone());
+        let environment = Environment::new_enclosing(Rc::clone(&self.closure));
         for (idx, param) in self.declaration.params.iter().enumerate() {
             environment
                 .borrow_mut()
