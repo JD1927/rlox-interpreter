@@ -77,9 +77,9 @@ impl Parser {
     fn var_declaration(&mut self) -> Result<Stmt, LoxErrorResult> {
         let name = self.consume(TokenType::Identifier, "Expect variable name.")?;
         let initializer = if self.matches(&[TokenType::Equal]) {
-            self.expression()?
+            Some(Box::new(self.expression()?))
         } else {
-            Expr::Literal(LiteralExpr { value: Object::Nil })
+            None
         };
 
         self.consume(
@@ -87,10 +87,7 @@ impl Parser {
             "Expect ';' after variable declaration.",
         )?;
 
-        Ok(Stmt::Var(VarStmt {
-            name,
-            initializer: Box::new(initializer),
-        }))
+        Ok(Stmt::Var(VarStmt { name, initializer }))
     }
 
     fn statement(&mut self) -> Result<Stmt, LoxErrorResult> {

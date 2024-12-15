@@ -64,7 +64,7 @@ pub struct ReturnStmt {
 #[derive(Debug, Clone)]
 pub struct VarStmt {
     pub name: Token,
-    pub initializer: Box<Expr>,
+    pub initializer: Option<Box<Expr>>,
 }
 
 #[derive(Debug, Clone)]

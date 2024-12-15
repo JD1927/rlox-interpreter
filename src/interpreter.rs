@@ -27,7 +27,11 @@ impl StmtVisitor<Result<(), LoxErrorResult>> for Interpreter {
     }
 
     fn visit_var_stmt(&mut self, stmt: &VarStmt) -> Result<(), LoxErrorResult> {
-        let initializer = self.evaluate(&stmt.initializer)?;
+        let initializer = if let Some(init_value) = &stmt.initializer {
+            self.evaluate(init_value)?
+        } else {
+            Object::Nil
+        };
 
         self.environment
             .borrow_mut()
@@ -758,7 +762,7 @@ mod interpreter_tests {
         let name = make_token_identifier("my_variable");
         let var_stmt = VarStmt {
             name: name.clone(),
-            initializer,
+            initializer: Some(initializer),
         };
 
         // Act
@@ -776,7 +780,7 @@ mod interpreter_tests {
         let name = make_token_identifier("my_variable");
         let var_stmt = VarStmt {
             name: name.clone(),
-            initializer,
+            initializer: Some(initializer),
         };
 
         // Act
@@ -798,7 +802,7 @@ mod interpreter_tests {
         let initializer = make_literal_number(123.0);
         let var_stmt = VarStmt {
             name: name.clone(),
-            initializer,
+            initializer: Some(initializer),
         };
         let var_expr = VariableExpr { name: name.clone() };
 
@@ -834,7 +838,7 @@ mod interpreter_tests {
         let initializer = make_literal_number(123.0);
         let var_stmt = VarStmt {
             name: name.clone(),
-            initializer,
+            initializer: Some(initializer),
         };
 
         let value = make_literal_number(321.0);

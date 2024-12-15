@@ -9,6 +9,7 @@ mod lox_function;
 mod lox_native_function;
 mod object;
 mod parser;
+mod resolver;
 mod scanner;
 mod stmt;
 mod token;
