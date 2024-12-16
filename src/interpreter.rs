@@ -1,5 +1,5 @@
 use std::{
-    cell::RefCell,
+    collections::HashMap,
     rc::Rc,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -12,6 +12,7 @@ use crate::{
 pub struct Interpreter {
     environment: EnvironmentRef,
     pub globals: EnvironmentRef,
+    pub locals: HashMap<Expr, usize>,
 }
 
 impl StmtVisitor<Result<(), LoxErrorResult>> for Interpreter {
@@ -277,6 +278,7 @@ impl Interpreter {
         Interpreter {
             environment: globals.clone(),
             globals,
+            locals: HashMap::new(),
         }
     }
 
@@ -291,10 +293,14 @@ impl Interpreter {
         stmt.accept(self)
     }
 
+    pub fn resolve(&mut self, expression: Expr, depth: usize) {
+        self.locals.insert(expression, depth);
+    }
+
     pub fn execute_block(
         &mut self,
         statements: &[Stmt],
-        new_env: Rc<RefCell<Environment>>,
+        new_env: EnvironmentRef,
     ) -> Result<(), LoxErrorResult> {
         // Stores current env until this point
         let previous_env = Rc::clone(&self.environment);
@@ -326,24 +332,27 @@ mod interpreter_tests {
     use super::*;
 
     fn make_literal(obj: Object) -> Box<Expr> {
-        Box::new(Expr::Literal(LiteralExpr { value: obj }))
+        Box::new(Expr::Literal(LiteralExpr { value: obj, uid: 0 }))
     }
 
     fn make_literal_number(num: f64) -> Box<Expr> {
         Box::new(Expr::Literal(LiteralExpr {
             value: Object::Number(num),
+            uid: 0,
         }))
     }
 
     fn make_literal_string(str_val: &str) -> Box<Expr> {
         Box::new(Expr::Literal(LiteralExpr {
             value: Object::String(str_val.to_string()),
+            uid: 0,
         }))
     }
 
     fn make_literal_bool(value: bool) -> Box<Expr> {
         Box::new(Expr::Literal(LiteralExpr {
             value: Object::Bool(value),
+            uid: 0,
         }))
     }
 
@@ -379,6 +388,7 @@ mod interpreter_tests {
                 left: make_literal(operand.0.to_owned()),
                 operator: token.to_owned(),
                 right: make_literal(operand.1.to_owned()),
+                uid: 0,
             };
             // Act
             let result = interpreter.visit_binary_expr(&binary_expr);
@@ -699,9 +709,11 @@ mod interpreter_tests {
                 left: make_literal_number(69.0),
                 operator: make_token_operator(TokenType::EqualEqual, "=="),
                 right: make_literal_number(69.0),
+                uid: 0,
             })),
             then_branch: make_literal_string("Ohhh yeaahhh!"),
             else_branch: make_literal_string(":c"),
+            uid: 0,
         };
 
         // Act
@@ -721,10 +733,12 @@ mod interpreter_tests {
         let unary_expr_1 = UnaryExpr {
             operator: make_token_operator(TokenType::Minus, "-"),
             right: make_literal_number(123.0),
+            uid: 0,
         };
         let unary_expr_2 = UnaryExpr {
             operator: make_token_operator(TokenType::Minus, "-"),
             right: make_literal_string("Coffee"),
+            uid: 0,
         };
 
         // Act
@@ -745,6 +759,7 @@ mod interpreter_tests {
         let unary_expr = UnaryExpr {
             operator: make_token_operator(TokenType::Bang, "!"),
             right: make_literal_bool(false),
+            uid: 0,
         };
 
         // Act
@@ -804,7 +819,10 @@ mod interpreter_tests {
             name: name.clone(),
             initializer: Some(initializer),
         };
-        let var_expr = VariableExpr { name: name.clone() };
+        let var_expr = VariableExpr {
+            name: name.clone(),
+            uid: 0,
+        };
 
         // Act
         let result = interpreter.visit_var_stmt(&var_stmt);
@@ -821,7 +839,7 @@ mod interpreter_tests {
         // Arrange
         let mut interpreter = Interpreter::new();
         let name = make_token_identifier("my_variable");
-        let var_expr = VariableExpr { name };
+        let var_expr = VariableExpr { name, uid: 0 };
 
         // Act
         let result = interpreter.visit_variable_expr(&var_expr);
@@ -842,7 +860,11 @@ mod interpreter_tests {
         };
 
         let value = make_literal_number(321.0);
-        let assign_expr = AssignExpr { name, value };
+        let assign_expr = AssignExpr {
+            name,
+            value,
+            uid: 0,
+        };
 
         // Act
         let result = interpreter.visit_var_stmt(&var_stmt);
@@ -861,7 +883,11 @@ mod interpreter_tests {
 
         let name = make_token_identifier("my_variable");
         let value = make_literal_number(321.0);
-        let assign_expr = AssignExpr { name, value };
+        let assign_expr = AssignExpr {
+            name,
+            value,
+            uid: 0,
+        };
 
         // Act
         let result = interpreter.visit_assign_expr(&assign_expr);
@@ -880,6 +906,7 @@ mod interpreter_tests {
             left,
             operator,
             right,
+            uid: 0,
         };
         // Act
         let result = interpreter.visit_logical_expr(&logical_expr);
@@ -899,6 +926,7 @@ mod interpreter_tests {
             left,
             operator,
             right,
+            uid: 0,
         };
         // Act
         let result = interpreter.visit_logical_expr(&logical_expr);

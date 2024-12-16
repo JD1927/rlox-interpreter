@@ -9,6 +9,7 @@ pub enum LoxErrorResult {
     Lexical { line: usize, message: String },
     Parser { token: Token, message: String },
     Interpreter { line: usize, message: String },
+    Resolver { token: Token, message: String },
     ControlFlowBreak,
     ControlFlowReturn { value: Object },
 }
@@ -47,6 +48,15 @@ impl LoxErrorResult {
         error
     }
 
+    pub fn resolver_error(token: Token, message: &str) -> LoxErrorResult {
+        let error = LoxErrorResult::Resolver {
+            token,
+            message: message.to_string(),
+        };
+        error.report();
+        error
+    }
+
     pub fn break_signal() -> LoxErrorResult {
         let error = LoxErrorResult::ControlFlowBreak {};
         error.report();
@@ -71,7 +81,8 @@ impl LoxErrorResult {
             LoxErrorResult::Lexical { line, message } => {
                 eprintln!("[Line {}] - Error: {}", line, message)
             }
-            LoxErrorResult::Parser { token, message } => {
+            LoxErrorResult::Parser { token, message }
+            | LoxErrorResult::Resolver { token, message } => {
                 if token.is(TokenType::Eof) {
                     eprintln!("[Line {}] - Error at end: {}", token.line, message)
                 } else {
@@ -84,8 +95,7 @@ impl LoxErrorResult {
             LoxErrorResult::Interpreter { line, message } => {
                 eprintln!("[Line {}] - Error: {}", line, message)
             }
-            LoxErrorResult::ControlFlowBreak { .. } => {}
-            LoxErrorResult::ControlFlowReturn { .. } => {}
+            LoxErrorResult::ControlFlowBreak | LoxErrorResult::ControlFlowReturn { .. } => {}
         }
     }
 }

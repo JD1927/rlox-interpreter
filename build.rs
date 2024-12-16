@@ -26,22 +26,24 @@ fn main() -> io::Result<()> {
                     "While      : Box<Expr> condition, Box<Stmt> body".to_string(),
                     "Break      : Token keyword".to_string(),
                 ],
+                false
             )?;
             define_ast(
                 &output_dir,
                 "Expr".to_string(),
                 &[
-                    "Assign   : Token name, Box<Expr> value".to_string(),
-                    "Binary   : Box<Expr> left, Token operator, Box<Expr> right".to_string(),
-                    "Call     : Box<Expr> callee, Token paren, Vec<Expr> arguments".to_string(),
-                    "Grouping : Box<Expr> expression".to_string(),
-                    "Literal  : Object value".to_string(),
-                    "Logical  : Box<Expr> left, Token operator, Box<Expr> right".to_string(),
-                    "Unary    : Token operator, Box<Expr> right".to_string(),
-                    "Ternary  : Box<Expr> condition, Box<Expr> then_branch, Box<Expr> else_branch"
+                    "Assign   : usize uid, Token name, Box<Expr> value".to_string(),
+                    "Binary   : usize uid, Box<Expr> left, Token operator, Box<Expr> right".to_string(),
+                    "Call     : usize uid, Box<Expr> callee, Token paren, Vec<Expr> arguments".to_string(),
+                    "Grouping : usize uid, Box<Expr> expression".to_string(),
+                    "Literal  : usize uid, Object value".to_string(),
+                    "Logical  : usize uid, Box<Expr> left, Token operator, Box<Expr> right".to_string(),
+                    "Unary    : usize uid, Token operator, Box<Expr> right".to_string(),
+                    "Ternary  : usize uid, Box<Expr> condition, Box<Expr> then_branch, Box<Expr> else_branch"
                         .to_string(),
-                    "Variable : Token name".to_string(),
+                    "Variable : usize uid, Token name".to_string(),
                 ],
+                true
             )?;
             Ok(())
         }

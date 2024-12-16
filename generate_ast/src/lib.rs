@@ -7,7 +7,12 @@ struct TreeType {
     fields: Vec<String>,
 }
 
-pub fn define_ast(output_dir: &str, base_name: String, tree_types: &[String]) -> io::Result<()> {
+pub fn define_ast(
+    output_dir: &str,
+    base_name: String,
+    tree_types: &[String],
+    require_hash: bool,
+) -> io::Result<()> {
     let path = format!("{output_dir}/{}.rs", base_name.to_lowercase());
     let mut file = File::create(path).expect("Failed to create file on specified location");
 
@@ -15,6 +20,9 @@ pub fn define_ast(output_dir: &str, base_name: String, tree_types: &[String]) ->
     writeln!(&mut file, "use crate::object::*;")?;
     if base_name.to_lowercase().contains("stmt") {
         writeln!(&mut file, "use crate::expr::*;")?;
+    }
+    if require_hash {
+        writeln!(&mut file, "use std::hash::Hash;")?;
     }
     writeln!(&mut file)?;
 
@@ -44,7 +52,10 @@ pub fn define_ast(output_dir: &str, base_name: String, tree_types: &[String]) ->
     }
 
     // Implement Base Type
-    impl_base_type(&mut file, &base_name, tree_types)?;
+    impl_base_type(&mut file, &base_name, tree_types, require_hash)?;
+    if require_hash {
+        impl_partial_eq_hash(&mut file, &base_name)?;
+    }
     writeln!(&mut file)?;
 
     Ok(())
@@ -99,7 +110,12 @@ fn define_type(file: &mut File, base_name: &str, tree_type: TreeType) -> io::Res
     Ok(())
 }
 
-fn impl_base_type(file: &mut File, base_name: &str, tree_types: &[String]) -> io::Result<()> {
+fn impl_base_type(
+    file: &mut File,
+    base_name: &str,
+    tree_types: &[String],
+    require_hash: bool,
+) -> io::Result<()> {
     writeln!(file, "impl {} {{", base_name)?;
     writeln!(
         file,
@@ -107,7 +123,7 @@ fn impl_base_type(file: &mut File, base_name: &str, tree_types: &[String]) -> io
         base_name
     )?;
     writeln!(file, "        match self {{",)?;
-    for tree_type in tree_types {
+    for tree_type in tree_types.iter() {
         let (tree_name, _) = tree_type.split_once(':').unwrap();
         writeln!(
             file,
@@ -124,7 +140,46 @@ fn impl_base_type(file: &mut File, base_name: &str, tree_types: &[String]) -> io
     }
     writeln!(file, "        }}",)?;
     writeln!(file, "    }}")?;
+    if require_hash {
+        writeln!(file, "    fn get_uid(&self) -> usize {{")?;
+        writeln!(file, "        match self {{",)?;
+        for tree_type in tree_types.iter() {
+            let (tree_name, _) = tree_type.split_once(':').unwrap();
+            writeln!(
+                file,
+                "            {}::{}(expr) => expr.uid,",
+                base_name.trim(),
+                tree_name.trim(),
+            )?;
+        }
+        writeln!(file, "        }}",)?;
+        writeln!(file, "    }}")?;
+    }
     writeln!(file, "}}",)?;
     writeln!(file)?;
+    Ok(())
+}
+
+fn impl_partial_eq_hash(file: &mut File, base_name: &str) -> io::Result<()> {
+    writeln!(file, "impl PartialEq for {} {{", base_name)?;
+    writeln!(file, "    fn eq(&self, other: &Self) -> bool {{")?;
+    writeln!(file, "        self.get_uid() == other.get_uid()",)?;
+    writeln!(file, "    }}")?;
+    writeln!(file, "}}")?;
+    writeln!(file)?;
+
+    writeln!(file, "impl Eq for {} {{}}", base_name)?;
+    writeln!(file)?;
+
+    writeln!(file, "impl Hash for {} {{", base_name)?;
+    writeln!(
+        file,
+        "    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {{"
+    )?;
+    writeln!(file, "        self.get_uid().hash(state);",)?;
+    writeln!(file, "    }}")?;
+    writeln!(file, "}}")?;
+    writeln!(file)?;
+
     Ok(())
 }

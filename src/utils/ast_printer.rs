@@ -78,7 +78,7 @@ mod ast_printer_tests {
     use super::*;
     #[test]
     pub fn test_ast_print() {
-        let expression = Expr::Binary(BinaryExpr {
+        let binary_expr = BinaryExpr {
             left: Box::new(Expr::Unary(UnaryExpr {
                 operator: Token {
                     token_type: TokenType::Minus,
@@ -88,7 +88,9 @@ mod ast_printer_tests {
                 },
                 right: Box::new(Expr::Literal(LiteralExpr {
                     value: Object::Number(123.0),
+                    uid: 0,
                 })),
+                uid: 0,
             })),
             operator: Token {
                 token_type: TokenType::Star,
@@ -99,9 +101,14 @@ mod ast_printer_tests {
             right: Box::new(Expr::Grouping(GroupingExpr {
                 expression: Box::new(Expr::Literal(LiteralExpr {
                     value: Object::Number(45.67),
+                    uid: 0,
                 })),
+                uid: 0,
             })),
-        });
+            uid: 0,
+        };
+        let binary_expr = binary_expr;
+        let expression = Expr::Binary(binary_expr);
 
         let mut ast_printer = AstPrinter {};
         println!("{}", ast_printer.string_value(&expression))
