@@ -2,13 +2,13 @@ use std::collections::HashMap;
 
 use crate::{error::*, expr::*, interpreter::*, stmt::*, token::Token};
 
-pub struct Resolver {
-    pub interpreter: Interpreter,
+pub struct Resolver<'a> {
+    pub interpreter: &'a mut Interpreter,
     pub scopes: Vec<HashMap<String, bool>>,
 }
 
-impl Resolver {
-    pub fn new(interpreter: Interpreter) -> Resolver {
+impl Resolver<'_> {
+    pub fn new(interpreter: &mut Interpreter) -> Resolver {
         Resolver {
             interpreter,
             scopes: Vec::new(),
@@ -19,7 +19,7 @@ impl Resolver {
         self.scopes.push(HashMap::new());
     }
 
-    fn resolve(&mut self, statements: &[Stmt]) -> Result<(), LoxErrorResult> {
+    pub fn resolve(&mut self, statements: &[Stmt]) -> Result<(), LoxErrorResult> {
         for statement in statements {
             self.resolve_stmt(statement)?;
         }
@@ -38,23 +38,34 @@ impl Resolver {
         self.scopes.pop();
     }
 
-    fn declare(&mut self, name: &Token) {
+    fn declare(&mut self, name: &Token) -> Result<(), LoxErrorResult> {
         if let Some(scope) = self.scopes.last_mut() {
-            scope.insert(name.lexeme.clone(), false);
+            if scope.contains_key(&name.lexeme) {
+                return Err(LoxErrorResult::resolver_error(
+                    name.clone(),
+                    "Already a variable with this name in this scope.",
+                ));
+            }
+            scope.insert(name.lexeme(), false);
         }
+        Ok(())
     }
 
     fn define(&mut self, name: &Token) {
         if let Some(scope) = self.scopes.last_mut() {
-            scope.insert(name.lexeme.clone(), true);
+            scope.insert(name.lexeme(), true);
         }
     }
 
+    ///  We start at the innermost scope and work outwards, looking in each map for a matching name.
+    /// If we find the variable, we resolve it, passing in the number of scopes between the current innermost scope and the scope where the variable was found.
+    /// So, if the variable was found in the current scope, we pass in 0. If it’s in the immediately enclosing scope, 1. You get the idea.
+    /// The order of iteration it is really important!
     fn resolve_local(&mut self, expression: &Expr, name: &Token) {
-        for (idx, scope) in self.scopes.iter().enumerate() {
+        for (idx, scope) in self.scopes.iter().enumerate().rev() {
             if scope.contains_key(&name.lexeme) {
-                self.interpreter
-                    .resolve(expression.clone(), self.scopes.len() - 1 - idx);
+                let depth = self.scopes.len() - 1 - idx;
+                self.interpreter.resolve(expression, depth);
                 return;
             }
         }
@@ -63,7 +74,7 @@ impl Resolver {
     fn resolve_function(&mut self, function: &FunctionStmt) -> Result<(), LoxErrorResult> {
         self.begin_scope();
         for param in function.params.iter() {
-            self.declare(param);
+            self.declare(param)?;
             self.define(param);
         }
         self.resolve(&function.body)?;
@@ -72,7 +83,7 @@ impl Resolver {
     }
 }
 
-impl StmtVisitor<Result<(), LoxErrorResult>> for Resolver {
+impl StmtVisitor<Result<(), LoxErrorResult>> for Resolver<'_> {
     fn visit_block_stmt(&mut self, stmt: &BlockStmt) -> Result<(), LoxErrorResult> {
         self.begin_scope();
         self.resolve(&stmt.statements)?;
@@ -85,7 +96,7 @@ impl StmtVisitor<Result<(), LoxErrorResult>> for Resolver {
     }
 
     fn visit_function_stmt(&mut self, stmt: &FunctionStmt) -> Result<(), LoxErrorResult> {
-        self.declare(&stmt.name);
+        self.declare(&stmt.name)?;
         self.define(&stmt.name);
 
         self.resolve_function(stmt)?;
@@ -113,7 +124,7 @@ impl StmtVisitor<Result<(), LoxErrorResult>> for Resolver {
     }
 
     fn visit_var_stmt(&mut self, stmt: &VarStmt) -> Result<(), LoxErrorResult> {
-        self.declare(&stmt.name);
+        self.declare(&stmt.name)?;
         if let Some(init_value) = &stmt.initializer {
             self.resolve_expr(init_value)?;
         }
@@ -133,7 +144,7 @@ impl StmtVisitor<Result<(), LoxErrorResult>> for Resolver {
     }
 }
 
-impl ExprVisitor<Result<(), LoxErrorResult>> for Resolver {
+impl ExprVisitor<Result<(), LoxErrorResult>> for Resolver<'_> {
     fn visit_assign_expr(&mut self, expr: &AssignExpr) -> Result<(), LoxErrorResult> {
         self.resolve_expr(&expr.value)?;
         self.resolve_local(&Expr::Assign(expr.clone()), &expr.name);
@@ -183,13 +194,15 @@ impl ExprVisitor<Result<(), LoxErrorResult>> for Resolver {
     }
 
     fn visit_variable_expr(&mut self, expr: &VariableExpr) -> Result<(), LoxErrorResult> {
-        let last_scope = self.scopes.last();
-        if last_scope.is_some() && !last_scope.unwrap().get(&expr.name.lexeme).unwrap() {
-            return Err(LoxErrorResult::resolver_error(
-                expr.name.clone(),
-                "Cannot read local variable in its own initializer.",
-            ));
+        if let Some(scope) = self.scopes.last() {
+            if let Some(false) = scope.get(&expr.name.lexeme) {
+                return Err(LoxErrorResult::resolver_error(
+                    expr.name.clone(),
+                    "Cannot read local variable in its own initializer.",
+                ));
+            }
         }
+
         self.resolve_local(&Expr::Variable(expr.clone()), &expr.name);
 
         Ok(())

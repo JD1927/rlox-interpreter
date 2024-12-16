@@ -9,6 +9,7 @@ use crate::{
     lox_native_function::*, object::*, stmt::*, token::*,
 };
 
+#[derive(Debug, Clone)]
 pub struct Interpreter {
     environment: EnvironmentRef,
     pub globals: EnvironmentRef,
@@ -36,7 +37,7 @@ impl StmtVisitor<Result<(), LoxErrorResult>> for Interpreter {
 
         self.environment
             .borrow_mut()
-            .define(stmt.name.lexeme.clone(), initializer);
+            .define(stmt.name.lexeme(), initializer);
         Ok(())
     }
 
@@ -86,7 +87,7 @@ impl StmtVisitor<Result<(), LoxErrorResult>> for Interpreter {
         let function = LoxFunction::new(stmt, Rc::clone(&self.environment));
         self.environment
             .borrow_mut()
-            .define(stmt.name.lexeme.clone(), Object::Function(function));
+            .define(stmt.name.lexeme(), Object::Function(function));
         Ok(())
     }
 
@@ -207,14 +208,21 @@ impl ExprVisitor<Result<Object, LoxErrorResult>> for Interpreter {
     }
 
     fn visit_variable_expr(&mut self, expr: &VariableExpr) -> Result<Object, LoxErrorResult> {
-        self.environment.borrow_mut().get(&expr.name)
+        self.look_up_variable(&expr.name, &Expr::Variable(expr.clone()))
     }
 
     fn visit_assign_expr(&mut self, expr: &AssignExpr) -> Result<Object, LoxErrorResult> {
         let value = self.evaluate(&expr.value)?;
-        self.environment
-            .borrow_mut()
-            .assign(&expr.name, value.clone())?;
+        let local_value = self.locals.get(&Expr::Assign(expr.clone()));
+        if let Some(distance) = local_value {
+            self.environment
+                .borrow_mut()
+                .assign_at(*distance, &expr.name, &value);
+        } else {
+            self.globals
+                .borrow_mut()
+                .assign(&expr.name, value.clone())?;
+        }
         Ok(value)
     }
 
@@ -293,8 +301,8 @@ impl Interpreter {
         stmt.accept(self)
     }
 
-    pub fn resolve(&mut self, expression: Expr, depth: usize) {
-        self.locals.insert(expression, depth);
+    pub fn resolve(&mut self, expression: &Expr, depth: usize) {
+        self.locals.insert(expression.clone(), depth);
     }
 
     pub fn execute_block(
@@ -323,6 +331,14 @@ impl Interpreter {
             Object::Nil => false,
             Object::Bool(val) => val,
             _ => true,
+        }
+    }
+
+    fn look_up_variable(&mut self, name: &Token, expr: &Expr) -> Result<Object, LoxErrorResult> {
+        if let Some(distance) = self.locals.get(expr) {
+            self.environment.borrow().get_at(*distance, name)
+        } else {
+            self.globals.borrow().get(name)
         }
     }
 }

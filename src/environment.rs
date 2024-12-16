@@ -31,22 +31,20 @@ impl Environment {
 
     pub fn get(&self, name: &Token) -> Result<Object, LoxErrorResult> {
         if let Some(value) = self.values.get(&name.lexeme) {
-            return Ok(value.clone());
-        }
-
-        if let Some(enclosing) = &self.enclosing {
+            Ok(value.clone())
+        } else if let Some(enclosing) = &self.enclosing {
             return enclosing.borrow().get(name);
+        } else {
+            Err(LoxErrorResult::interpreter_error(
+                name.line,
+                &format!("Undefined variable '{}'.", name.lexeme),
+            ))
         }
-
-        Err(LoxErrorResult::interpreter_error(
-            name.line,
-            &format!("Undefined variable '{}'.", name.lexeme),
-        ))
     }
 
     pub fn assign(&mut self, name: &Token, value: Object) -> Result<Object, LoxErrorResult> {
         if self.values.contains_key(&name.lexeme) {
-            self.values.insert(name.lexeme.clone(), value);
+            self.define(name.lexeme(), value);
             return Ok(Object::Nil);
         }
 
@@ -58,6 +56,32 @@ impl Environment {
             name.line,
             &format!("Undefined variable '{}'.", name.lexeme),
         ))
+    }
+
+    /// Gets the enclosing environment recursively until it hits the last enclosing one
+    pub fn get_at(&self, distance: usize, name: &Token) -> Result<Object, LoxErrorResult> {
+        // Base case
+        if distance == 0 {
+            return self.get(name);
+        }
+        if let Some(enclosing) = &self.enclosing {
+            // Recursion
+            return enclosing.borrow_mut().get_at(distance - 1, name);
+        }
+        panic!("Could not find local scope that variable belongs to!")
+    }
+
+    pub fn assign_at(&mut self, distance: usize, name: &Token, value: &Object) {
+        if distance == 0 {
+            self.define(name.lexeme(), value.clone());
+            return;
+        }
+        if let Some(enclosing) = &self.enclosing {
+            // Recursion
+            enclosing.borrow_mut().assign_at(distance - 1, name, value);
+            return;
+        }
+        panic!("Could not find local scope that variable belongs to!")
     }
 }
 

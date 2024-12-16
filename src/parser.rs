@@ -2,16 +2,23 @@ use crate::{error::*, expr::*, object::*, stmt::*, token::*};
 
 #[derive(Debug)]
 pub struct Parser {
-    uid: usize,
     tokens: Vec<Token>,
     current: usize,
     loop_depth: usize,
 }
 
+static mut UUID: usize = 0;
+
+pub fn next_uid() -> usize {
+    unsafe {
+        UUID += 1;
+        UUID
+    }
+}
+
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Parser {
         Parser {
-            uid: 0,
             tokens,
             current: 0,
             loop_depth: 0,
@@ -181,7 +188,7 @@ impl Parser {
             result
         } else {
             Expr::Literal(LiteralExpr {
-                uid: self.next_uid(),
+                uid: next_uid(),
                 value: Object::Bool(true),
             })
         };
@@ -285,7 +292,7 @@ impl Parser {
                 return Ok(Expr::Assign(AssignExpr {
                     name: variable.name,
                     value: Box::new(value),
-                    uid: self.next_uid(),
+                    uid: next_uid(),
                 }));
             }
             return Err(LoxErrorResult::parse_error(
@@ -313,7 +320,7 @@ impl Parser {
                 condition: Box::new(expr),
                 then_branch: Box::new(then_branch),
                 else_branch: Box::new(else_branch),
-                uid: self.next_uid(),
+                uid: next_uid(),
             })
         }
         Ok(expr)
@@ -329,7 +336,7 @@ impl Parser {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
-                uid: self.next_uid(),
+                uid: next_uid(),
             });
         }
 
@@ -346,7 +353,7 @@ impl Parser {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
-                uid: self.next_uid(),
+                uid: next_uid(),
             });
         }
         Ok(expr)
@@ -362,7 +369,7 @@ impl Parser {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
-                uid: self.next_uid(),
+                uid: next_uid(),
             });
         }
 
@@ -384,7 +391,7 @@ impl Parser {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
-                uid: self.next_uid(),
+                uid: next_uid(),
             });
         }
 
@@ -401,7 +408,7 @@ impl Parser {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
-                uid: self.next_uid(),
+                uid: next_uid(),
             });
         }
 
@@ -418,7 +425,7 @@ impl Parser {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
-                uid: self.next_uid(),
+                uid: next_uid(),
             });
         }
 
@@ -432,7 +439,7 @@ impl Parser {
             return Ok(Expr::Unary(UnaryExpr {
                 operator,
                 right,
-                uid: self.next_uid(),
+                uid: next_uid(),
             }));
         }
         self.call()
@@ -462,7 +469,7 @@ impl Parser {
             callee,
             paren,
             arguments,
-            uid: self.next_uid(),
+            uid: next_uid(),
         }))
     }
 
@@ -483,26 +490,26 @@ impl Parser {
         if self.matches(&[TokenType::False]) {
             return Ok(Expr::Literal(LiteralExpr {
                 value: Object::Bool(false),
-                uid: self.next_uid(),
+                uid: next_uid(),
             }));
         }
         if self.matches(&[TokenType::True]) {
             return Ok(Expr::Literal(LiteralExpr {
                 value: Object::Bool(true),
-                uid: self.next_uid(),
+                uid: next_uid(),
             }));
         }
         if self.matches(&[TokenType::Nil]) {
             return Ok(Expr::Literal(LiteralExpr {
                 value: Object::Nil,
-                uid: self.next_uid(),
+                uid: next_uid(),
             }));
         }
         if self.matches(&[TokenType::Number, TokenType::String]) {
             let value = self.previous();
             return Ok(Expr::Literal(LiteralExpr {
                 value: value.literal,
-                uid: self.next_uid(),
+                uid: next_uid(),
             }));
         }
 
@@ -510,7 +517,7 @@ impl Parser {
             let name = self.previous();
             return Ok(Expr::Variable(VariableExpr {
                 name,
-                uid: self.next_uid(),
+                uid: next_uid(),
             }));
         }
 
@@ -519,7 +526,7 @@ impl Parser {
             self.consume(TokenType::RightParen, "Expect ')' after expression.")?;
             return Ok(Expr::Grouping(GroupingExpr {
                 expression,
-                uid: self.next_uid(),
+                uid: next_uid(),
             }));
         }
         Err(LoxErrorResult::parse_error(
@@ -570,11 +577,6 @@ impl Parser {
 
     fn previous(&self) -> Token {
         self.tokens[self.current - 1].clone()
-    }
-
-    fn next_uid(&mut self) -> usize {
-        self.uid += 1;
-        self.uid
     }
 
     fn synchronize(&mut self) {

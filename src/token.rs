@@ -23,6 +23,10 @@ impl Token {
     pub fn is(&self, token_type: TokenType) -> bool {
         self.token_type == token_type
     }
+
+    pub fn lexeme(&self) -> String {
+        self.lexeme.clone()
+    }
 }
 
 impl fmt::Display for Token {
