@@ -2,6 +2,23 @@ use std::collections::HashMap;
 
 use crate::{error::*, expr::*, interpreter::*, stmt::*, token::Token};
 
+#[derive(Debug, Clone)]
+pub struct VariableInfo {
+    is_defined: bool,
+    is_used: bool,
+    token: Token,
+}
+
+impl VariableInfo {
+    pub fn new(is_defined: bool, is_used: bool, token: Token) -> VariableInfo {
+        VariableInfo {
+            is_defined,
+            is_used,
+            token,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FunctionType {
     None,
@@ -10,7 +27,7 @@ pub enum FunctionType {
 
 pub struct Resolver<'a> {
     pub interpreter: &'a mut Interpreter,
-    pub scopes: Vec<HashMap<String, bool>>,
+    pub scopes: Vec<HashMap<String, VariableInfo>>,
     pub had_error: bool,
     current_function: FunctionType,
     in_loop: bool,
@@ -46,7 +63,16 @@ impl Resolver<'_> {
     }
 
     fn end_scope(&mut self) {
-        self.scopes.pop();
+        if let Some(scope) = self.scopes.pop() {
+            for (_, variable_info) in scope {
+                if !variable_info.is_used {
+                    LoxErrorResult::warning(
+                        variable_info.token,
+                        "Variable is declared but never used.",
+                    );
+                }
+            }
+        }
     }
 
     fn declare(&mut self, name: &Token) {
@@ -58,13 +84,15 @@ impl Resolver<'_> {
                 );
                 self.had_error = true;
             }
-            scope.insert(name.lexeme(), false);
+            scope.insert(name.lexeme(), VariableInfo::new(false, false, name.clone()));
         }
     }
 
     fn define(&mut self, name: &Token) {
         if let Some(scope) = self.scopes.last_mut() {
-            scope.insert(name.lexeme(), true);
+            if let Some(info) = scope.get_mut(&name.lexeme) {
+                info.is_defined = true;
+            }
         }
     }
 
@@ -73,8 +101,11 @@ impl Resolver<'_> {
     /// So, if the variable was found in the current scope, we pass in 0. If it’s in the immediately enclosing scope, 1. You get the idea.
     /// The order of iteration it is really important!
     fn resolve_local(&mut self, expression: &Expr, name: &Token) {
-        for (idx, scope) in self.scopes.iter().enumerate().rev() {
-            if scope.contains_key(&name.lexeme) {
+        for (idx, scope) in self.scopes.iter_mut().enumerate().rev() {
+            if let Some(info) = scope.get_mut(&name.lexeme) {
+                // Mark variable as used!
+                info.is_used = true;
+                // Resolve the variable
                 let depth = self.scopes.len() - 1 - idx;
                 self.interpreter.resolve(expression, depth);
                 return;
@@ -208,12 +239,14 @@ impl ExprVisitor<()> for Resolver<'_> {
 
     fn visit_variable_expr(&mut self, expr: &VariableExpr) {
         if let Some(scope) = self.scopes.last() {
-            if let Some(false) = scope.get(&expr.name.lexeme) {
-                LoxErrorResult::resolver_error(
-                    expr.name.clone(),
-                    "Cannot read local variable in its own initializer.",
-                );
-                self.had_error = true;
+            if let Some(variable_info) = scope.get(&expr.name.lexeme) {
+                if !variable_info.is_defined {
+                    LoxErrorResult::resolver_error(
+                        expr.name.clone(),
+                        "Cannot read local variable in its own initializer.",
+                    );
+                    self.had_error = true;
+                }
             }
         }
 

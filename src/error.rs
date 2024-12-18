@@ -10,6 +10,7 @@ pub enum LoxErrorResult {
     Parser { token: Token, message: String },
     Interpreter { line: usize, message: String },
     Resolver { token: Token, message: String },
+    Warning { token: Token, message: String },
     ControlFlowBreak,
     ControlFlowReturn { value: Object },
 }
@@ -53,6 +54,15 @@ impl LoxErrorResult {
         error
     }
 
+    pub fn warning(token: Token, message: &str) -> LoxErrorResult {
+        let warning = LoxErrorResult::Warning {
+            message: message.to_string(),
+            token,
+        };
+        warning.report();
+        warning
+    }
+
     pub fn break_signal() -> LoxErrorResult {
         let error = LoxErrorResult::ControlFlowBreak {};
         error.report();
@@ -92,6 +102,12 @@ impl LoxErrorResult {
                 eprintln!("[Line {}] - Error: {}", line, message)
             }
             LoxErrorResult::ControlFlowBreak | LoxErrorResult::ControlFlowReturn { .. } => {}
+            LoxErrorResult::Warning { token, message } => {
+                eprintln!(
+                    "[Line {}] - Warning: '{}': {}",
+                    token.line, token.lexeme, message
+                )
+            }
         }
     }
 }

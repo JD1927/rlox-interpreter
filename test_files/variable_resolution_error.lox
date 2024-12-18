@@ -1,10 +1,21 @@
-fun bad() {
+fun wows() {
+  // Same variable in scope
   var a = "first";
   var a = "second";
+  {
+    var a = a;
+  }
 }
 
 fun bad() {
+  // Break statement outside a loop
   var a = "first";
-  var a = "second";
+  var b = "second";
   break;
+}
+
+fun warning() {
+  // Not used variables
+  var a = "first";
+  var b = "second";
 }
