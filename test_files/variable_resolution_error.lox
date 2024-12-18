@@ -2,3 +2,9 @@ fun bad() {
   var a = "first";
   var a = "second";
 }
+
+fun bad() {
+  var a = "first";
+  var a = "second";
+  break;
+}

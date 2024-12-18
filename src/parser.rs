@@ -4,7 +4,6 @@ use crate::{error::*, expr::*, object::*, stmt::*, token::*};
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
-    loop_depth: usize,
     pub had_error: bool,
 }
 
@@ -22,7 +21,6 @@ impl Parser {
         Parser {
             tokens,
             current: 0,
-            loop_depth: 0,
             had_error: false,
         }
     }
@@ -136,12 +134,6 @@ impl Parser {
     }
 
     fn break_statement(&mut self) -> Result<Stmt, LoxErrorResult> {
-        if self.loop_depth == 0 {
-            return Err(LoxErrorResult::parse_error(
-                self.previous(),
-                "'break' can only be used inside loops.",
-            ));
-        }
         let keyword = self.previous().clone();
         self.consume(TokenType::Semicolon, "Expect ';' after 'break'.")?;
         Ok(Stmt::Break(BreakStmt { keyword }))
@@ -176,9 +168,7 @@ impl Parser {
         self.consume(TokenType::RightParen, "Expect ')' after for clauses.")?;
 
         // Get body
-        self.loop_depth += 1;
         let mut body = self.statement()?;
-        self.loop_depth -= 1;
 
         // Check increment
         if let Some(value) = increment {
@@ -258,9 +248,7 @@ impl Parser {
         self.consume(TokenType::LeftParen, "Expect '(' after 'while'.")?;
         let condition = self.expression()?;
         self.consume(TokenType::RightParen, "Expect ')' after condition.")?;
-        self.loop_depth += 1;
         let body = self.statement()?;
-        self.loop_depth -= 1;
 
         Ok(Stmt::While(WhileStmt {
             condition: Box::new(condition),

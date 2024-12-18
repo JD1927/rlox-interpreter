@@ -11,8 +11,9 @@ pub enum FunctionType {
 pub struct Resolver<'a> {
     pub interpreter: &'a mut Interpreter,
     pub scopes: Vec<HashMap<String, bool>>,
-    pub current_function: FunctionType,
     pub had_error: bool,
+    current_function: FunctionType,
+    in_loop: bool,
 }
 
 impl Resolver<'_> {
@@ -22,6 +23,7 @@ impl Resolver<'_> {
             scopes: Vec::new(),
             current_function: FunctionType::None,
             had_error: false,
+            in_loop: false,
         }
     }
 
@@ -146,11 +148,22 @@ impl StmtVisitor<()> for Resolver<'_> {
     }
 
     fn visit_while_stmt(&mut self, stmt: &WhileStmt) {
+        let nesting_loop = self.in_loop;
+        self.in_loop = true;
         self.resolve_expr(&stmt.condition);
         self.resolve_stmt(&stmt.body);
+        self.in_loop = nesting_loop;
     }
 
-    fn visit_break_stmt(&mut self, _stmt: &BreakStmt) {}
+    fn visit_break_stmt(&mut self, stmt: &BreakStmt) {
+        if !self.in_loop {
+            LoxErrorResult::resolver_error(
+                stmt.keyword.clone(),
+                "'break' can only be used inside loops.",
+            );
+            self.had_error = true;
+        }
+    }
 }
 
 impl ExprVisitor<()> for Resolver<'_> {
