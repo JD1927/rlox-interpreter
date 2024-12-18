@@ -18,10 +18,7 @@ use std::env::args;
 
 use std::io::{self, Write};
 
-use crate::{
-    error::LoxErrorResult, interpreter::Interpreter, parser::Parser, resolver::Resolver,
-    scanner::Scanner,
-};
+use crate::{interpreter::Interpreter, parser::Parser, resolver::Resolver, scanner::Scanner};
 
 fn main() {
     // TODO: Add a way to handle print AST an arg
@@ -39,9 +36,7 @@ fn main() {
 
 fn run_file(path: &str, interpreter: &mut Interpreter) -> io::Result<()> {
     let source = std::fs::read_to_string(path)?;
-    if run(source, interpreter).is_err() {
-        std::process::exit(65);
-    }
+    run(source, interpreter);
     Ok(())
 }
 
@@ -51,27 +46,31 @@ fn run_prompt(interpreter: &mut Interpreter) {
         let _ = io::stdout().flush();
         let mut line = String::new();
         io::stdin().read_line(&mut line).unwrap();
-        let _ = run(line, interpreter);
+        run(line, interpreter);
     }
 }
 
-fn run(source: String, interpreter: &mut Interpreter) -> Result<(), LoxErrorResult> {
+fn run(source: String, interpreter: &mut Interpreter) {
     // Lexical Analysis
 
     let mut scanner = Scanner::new(source);
-    let tokens = scanner.scan_tokens()?;
+    let tokens = scanner.scan_tokens();
 
     // Parsing
     let mut parser = Parser::new(tokens);
-    // Stop if there was a syntax error
-    let statements = parser.parse()?;
+    let statements = parser.parse();
+
+    if parser.had_error {
+        return; // Stop if there was a parse error.
+    }
 
     // Resolving
     let mut resolver = Resolver::new(interpreter);
-    resolver.resolve(&statements)?;
+    resolver.resolve(&statements);
 
+    if resolver.had_error {
+        return; // Stop if there was a resolution error.
+    }
     // Run Interpreter
-    interpreter.interpret(&statements)?;
-
-    Ok(())
+    interpreter.interpret(&statements);
 }

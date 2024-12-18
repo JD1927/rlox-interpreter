@@ -16,6 +16,85 @@ pub struct Interpreter {
     pub locals: HashMap<Expr, usize>,
 }
 
+impl Interpreter {
+    pub fn new() -> Interpreter {
+        let globals = Environment::new();
+        globals.borrow_mut().define(
+            "clock".to_string(),
+            Object::NativeFunction(NativeFunction {
+                name: "clock".to_string(),
+                arity: 0,
+                callable: |_, _| match SystemTime::now().duration_since(UNIX_EPOCH) {
+                    Ok(timestamp) => Ok(Object::Number(timestamp.as_millis() as f64)),
+                    Err(err) => Err(LoxErrorResult::system_error(&format!(
+                        "Clock returned an invalid duration: {}",
+                        &err.to_string()
+                    ))),
+                },
+            }),
+        );
+        Interpreter {
+            environment: globals.clone(),
+            globals,
+            locals: HashMap::new(),
+        }
+    }
+
+    pub fn interpret(&mut self, statements: &[Stmt]) {
+        for statement in statements {
+            match self.execute(statement) {
+                Ok(_) => (),
+                Err(err) => err.report(),
+            }
+        }
+    }
+
+    fn execute(&mut self, stmt: &Stmt) -> Result<(), LoxErrorResult> {
+        stmt.accept(self)
+    }
+
+    pub fn resolve(&mut self, expression: &Expr, depth: usize) {
+        self.locals.insert(expression.clone(), depth);
+    }
+
+    pub fn execute_block(
+        &mut self,
+        statements: &[Stmt],
+        new_env: EnvironmentRef,
+    ) -> Result<(), LoxErrorResult> {
+        // Stores current env until this point
+        let previous_env = Rc::clone(&self.environment);
+
+        // Update the interpreter's environment to the new one
+        self.environment = new_env;
+        // Executes each statement until it reaches an error
+        let result = statements.iter().try_for_each(|stmt| self.execute(stmt));
+        // Get back the previous environment;
+        self.environment = previous_env;
+        result
+    }
+
+    fn evaluate(&mut self, expr: &Expr) -> Result<Object, LoxErrorResult> {
+        expr.accept(self)
+    }
+
+    fn is_truthy(&mut self, value: Object) -> bool {
+        match value {
+            Object::Nil => false,
+            Object::Bool(val) => val,
+            _ => true,
+        }
+    }
+
+    fn look_up_variable(&mut self, name: &Token, expr: &Expr) -> Result<Object, LoxErrorResult> {
+        if let Some(distance) = self.locals.get(expr) {
+            self.environment.borrow().get_at(*distance, name)
+        } else {
+            self.globals.borrow().get(name)
+        }
+    }
+}
+
 impl StmtVisitor<Result<(), LoxErrorResult>> for Interpreter {
     fn visit_expression_stmt(&mut self, stmt: &ExpressionStmt) -> Result<(), LoxErrorResult> {
         self.evaluate(&stmt.expression)?;
@@ -262,83 +341,6 @@ impl ExprVisitor<Result<Object, LoxErrorResult>> for Interpreter {
                 expr.paren.line,
                 "Can only call functions and classes.",
             )),
-        }
-    }
-}
-
-impl Interpreter {
-    pub fn new() -> Interpreter {
-        let globals = Environment::new();
-        globals.borrow_mut().define(
-            "clock".to_string(),
-            Object::NativeFunction(NativeFunction {
-                name: "clock".to_string(),
-                arity: 0,
-                callable: |_, _| match SystemTime::now().duration_since(UNIX_EPOCH) {
-                    Ok(timestamp) => Ok(Object::Number(timestamp.as_millis() as f64)),
-                    Err(err) => Err(LoxErrorResult::system_error(&format!(
-                        "Clock returned an invalid duration: {}",
-                        &err.to_string()
-                    ))),
-                },
-            }),
-        );
-        Interpreter {
-            environment: globals.clone(),
-            globals,
-            locals: HashMap::new(),
-        }
-    }
-
-    pub fn interpret(&mut self, statements: &[Stmt]) -> Result<(), LoxErrorResult> {
-        for statement in statements {
-            self.execute(statement)?
-        }
-        Ok(())
-    }
-
-    fn execute(&mut self, stmt: &Stmt) -> Result<(), LoxErrorResult> {
-        stmt.accept(self)
-    }
-
-    pub fn resolve(&mut self, expression: &Expr, depth: usize) {
-        self.locals.insert(expression.clone(), depth);
-    }
-
-    pub fn execute_block(
-        &mut self,
-        statements: &[Stmt],
-        new_env: EnvironmentRef,
-    ) -> Result<(), LoxErrorResult> {
-        // Stores current env until this point
-        let previous_env = Rc::clone(&self.environment);
-
-        // Update the interpreter's environment to the new one
-        self.environment = new_env;
-        // Executes each statement until it reaches an error
-        let result = statements.iter().try_for_each(|stmt| self.execute(stmt));
-        // Get back the previous environment;
-        self.environment = previous_env;
-        result
-    }
-
-    fn evaluate(&mut self, expr: &Expr) -> Result<Object, LoxErrorResult> {
-        expr.accept(self)
-    }
-
-    fn is_truthy(&mut self, value: Object) -> bool {
-        match value {
-            Object::Nil => false,
-            Object::Bool(val) => val,
-            _ => true,
-        }
-    }
-
-    fn look_up_variable(&mut self, name: &Token, expr: &Expr) -> Result<Object, LoxErrorResult> {
-        if let Some(distance) = self.locals.get(expr) {
-            self.environment.borrow().get_at(*distance, name)
-        } else {
-            self.globals.borrow().get(name)
         }
     }
 }

@@ -21,7 +21,7 @@ impl Scanner {
         }
     }
 
-    pub fn scan_tokens(&mut self) -> Result<Vec<Token>, LoxErrorResult> {
+    pub fn scan_tokens(&mut self) -> Vec<Token> {
         while !self.is_at_end() {
             self.start = self.current;
             match self.scan_token() {
@@ -36,7 +36,7 @@ impl Scanner {
             Object::Nil,
             self.line,
         ));
-        Ok(self.tokens.clone())
+        self.tokens.clone()
     }
 
     fn scan_token(&mut self) -> Result<(), LoxErrorResult> {
@@ -113,7 +113,7 @@ impl Scanner {
                 } else {
                     return Err(LoxErrorResult::lexical_error(
                         self.line,
-                        "Unexpected character.",
+                        &format!("Unexpected character. -> '{_char}'"),
                     ));
                 }
             }

@@ -31,21 +31,17 @@ impl LoxErrorResult {
     }
 
     pub fn parse_error(token: Token, message: &str) -> LoxErrorResult {
-        let error = LoxErrorResult::Parser {
+        LoxErrorResult::Parser {
             token,
             message: message.to_string(),
-        };
-        error.report();
-        error
+        }
     }
 
     pub fn interpreter_error(line: usize, message: &str) -> LoxErrorResult {
-        let error = LoxErrorResult::Interpreter {
+        LoxErrorResult::Interpreter {
             line,
             message: message.to_string(),
-        };
-        error.report();
-        error
+        }
     }
 
     pub fn resolver_error(token: Token, message: &str) -> LoxErrorResult {

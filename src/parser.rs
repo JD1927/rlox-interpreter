@@ -5,6 +5,7 @@ pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
     loop_depth: usize,
+    pub had_error: bool,
 }
 
 static mut UUID: usize = 0;
@@ -22,18 +23,21 @@ impl Parser {
             tokens,
             current: 0,
             loop_depth: 0,
+            had_error: false,
         }
     }
 
-    pub fn parse(&mut self) -> Result<Vec<Stmt>, LoxErrorResult> {
+    pub fn parse(&mut self) -> Vec<Stmt> {
         let mut statements: Vec<Stmt> = Vec::new();
         while !self.is_at_end() {
-            statements.push(self.declaration()?);
+            if let Some(statement) = self.declaration() {
+                statements.push(statement);
+            }
         }
-        Ok(statements)
+        statements
     }
 
-    fn declaration(&mut self) -> Result<Stmt, LoxErrorResult> {
+    fn declaration(&mut self) -> Option<Stmt> {
         let declaration = if self.matches(&[TokenType::Fun]) {
             self.function_declaration("function")
         } else if self.matches(&[TokenType::Var]) {
@@ -42,10 +46,15 @@ impl Parser {
             self.statement()
         };
         // Has a parse error
-        if declaration.is_err() {
-            self.synchronize();
+        match declaration {
+            Ok(statement) => Some(statement),
+            Err(err) => {
+                err.report();
+                self.had_error = true;
+                self.synchronize();
+                None
+            }
         }
-        declaration
     }
 
     fn function_declaration(&mut self, kind: &str) -> Result<Stmt, LoxErrorResult> {
@@ -263,7 +272,9 @@ impl Parser {
         let mut statements: Vec<Stmt> = Vec::new();
 
         while !self.check(&TokenType::RightBrace) && !self.is_at_end() {
-            statements.push(self.declaration()?);
+            if let Some(statement) = self.declaration() {
+                statements.push(statement);
+            }
         }
         self.consume(TokenType::RightBrace, "Expect '}' after block.")?;
         Ok(statements)
