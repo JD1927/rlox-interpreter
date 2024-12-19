@@ -1,18 +1,25 @@
-use std::fmt::{self, Display, Formatter};
+use std::{
+    collections::HashMap,
+    fmt::{self, Display, Formatter},
+};
 
 use crate::{
     error::LoxErrorResult, interpreter::Interpreter, lox_callable::LoxCallable,
-    lox_instance::LoxInstance, object::Object, token::Token,
+    lox_function::LoxFunction, lox_instance::LoxInstance, object::Object, token::Token,
 };
 
 #[derive(Debug, Clone)]
 pub struct LoxClass {
     pub name: String,
+    pub methods: HashMap<String, LoxFunction>,
 }
 
 impl LoxClass {
-    pub fn new(name: String) -> LoxClass {
-        LoxClass { name }
+    pub fn new(name: String, methods: HashMap<String, LoxFunction>) -> LoxClass {
+        LoxClass { name, methods }
+    }
+    pub fn find_method(&self, name: &str) -> Option<LoxFunction> {
+        self.methods.get(name).cloned()
     }
 }
 

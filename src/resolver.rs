@@ -23,6 +23,7 @@ impl VariableInfo {
 pub enum FunctionType {
     None,
     Function,
+    Method,
 }
 
 pub struct Resolver<'a> {
@@ -199,6 +200,16 @@ impl StmtVisitor<()> for Resolver<'_> {
     fn visit_class_stmt(&mut self, stmt: &ClassStmt) {
         self.declare(&stmt.name);
         self.define(&stmt.name);
+
+        for stmt in &stmt.methods {
+            match stmt {
+                Stmt::Function(method) => {
+                    let declaration = FunctionType::Method;
+                    self.resolve_function(method, declaration);
+                }
+                _ => panic!("Not a method!"),
+            }
+        }
     }
 }
 

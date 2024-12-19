@@ -183,7 +183,20 @@ impl StmtVisitor<Result<(), LoxErrorResult>> for Interpreter {
         self.environment
             .borrow_mut()
             .define(stmt.name.lexeme(), Object::Nil);
-        let class = LoxClass::new(stmt.name.lexeme());
+
+        let mut methods: HashMap<String, LoxFunction> = HashMap::new();
+
+        for stmt in &stmt.methods {
+            match stmt {
+                Stmt::Function(method) => {
+                    let function = LoxFunction::new(method, self.environment.clone());
+                    methods.insert(method.name.lexeme(), function);
+                }
+                _ => panic!("Not a method!"),
+            }
+        }
+
+        let class = LoxClass::new(stmt.name.lexeme(), methods);
         self.environment
             .borrow_mut()
             .assign(&stmt.name, Object::Class(class))?;
