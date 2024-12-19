@@ -348,6 +348,10 @@ impl ExprVisitor<Result<Object, LoxErrorResult>> for Interpreter {
                 native_function.check_arity(arguments.len(), &expr.paren)?;
                 native_function.call(self, arguments)
             }
+            Object::Class(mut native_function) => {
+                native_function.check_arity(arguments.len(), &expr.paren)?;
+                native_function.call(self, arguments)
+            }
             _ => Err(LoxErrorResult::interpreter_error(
                 expr.paren.line,
                 "Can only call functions and classes.",

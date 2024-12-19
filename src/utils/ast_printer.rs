@@ -40,6 +40,7 @@ impl ExprVisitor<String> for AstPrinter {
             Object::Function(_function) => todo!(),
             Object::NativeFunction(_native_function) => todo!(),
             Object::Class(lox_class) => todo!(),
+            Object::ClassInstance(lox_instance) => todo!(),
         }
     }
     fn visit_unary_expr(&mut self, expr: &UnaryExpr) -> String {
