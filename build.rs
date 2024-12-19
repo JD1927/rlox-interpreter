@@ -40,6 +40,7 @@ fn main() -> io::Result<()> {
                     "Grouping : usize uid, Box<Expr> expression".to_string(),
                     "Literal  : usize uid, Object value".to_string(),
                     "Logical  : usize uid, Box<Expr> left, Token operator, Box<Expr> right".to_string(),
+                    "Set      : usize uid, Box<Expr> object, Token name, Box<Expr> value".to_string(),
                     "Unary    : usize uid, Token operator, Box<Expr> right".to_string(),
                     "Ternary  : usize uid, Box<Expr> condition, Box<Expr> then_branch, Box<Expr> else_branch"
                         .to_string(),

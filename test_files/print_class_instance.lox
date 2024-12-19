@@ -1,3 +1,8 @@
 class Bagel {}
-var bagel = Bagel();
-print bagel; // Prints "Bagel instance".
+var bagel1 = Bagel();
+var bagel2 = Bagel();
+bagel1.value = 3;
+bagel2.value = 2;
+print bagel1; // "Bagel instance
+print bagel2; // "Bagel instance
+print bagel1.value == bagel2.value; // false -> Not the same reference

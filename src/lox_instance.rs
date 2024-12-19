@@ -1,7 +1,9 @@
 use crate::{error::LoxErrorResult, lox_class::LoxClass, object::Object, token::Token};
 use std::{
+    cell::RefCell,
     collections::HashMap,
     fmt::{self, Display, Formatter},
+    rc::Rc,
 };
 
 #[derive(Debug, Clone)]
@@ -10,12 +12,14 @@ pub struct LoxInstance {
     fields: HashMap<String, Object>,
 }
 
+pub type LoxInstanceRef = Rc<RefCell<LoxInstance>>;
+
 impl LoxInstance {
-    pub fn new(lox_class: LoxClass) -> LoxInstance {
-        LoxInstance {
+    pub fn new(lox_class: LoxClass) -> LoxInstanceRef {
+        Rc::new(RefCell::new(LoxInstance {
             lox_class,
             fields: HashMap::new(),
-        }
+        }))
     }
 
     pub fn get(&self, name: &Token) -> Result<Object, LoxErrorResult> {
@@ -26,6 +30,10 @@ impl LoxInstance {
                 &format!("Undefined property '{}'.", name.lexeme),
             )),
         }
+    }
+
+    pub fn set(&mut self, name: &Token, value: Object) {
+        self.fields.insert(name.lexeme(), value);
     }
 }
 

@@ -10,6 +10,7 @@ pub trait ExprVisitor<T> {
     fn visit_grouping_expr(&mut self, expr: &GroupingExpr) -> T;
     fn visit_literal_expr(&mut self, expr: &LiteralExpr) -> T;
     fn visit_logical_expr(&mut self, expr: &LogicalExpr) -> T;
+    fn visit_set_expr(&mut self, expr: &SetExpr) -> T;
     fn visit_unary_expr(&mut self, expr: &UnaryExpr) -> T;
     fn visit_ternary_expr(&mut self, expr: &TernaryExpr) -> T;
     fn visit_variable_expr(&mut self, expr: &VariableExpr) -> T;
@@ -23,6 +24,7 @@ pub enum Expr {
     Grouping(GroupingExpr),
     Literal(LiteralExpr),
     Logical(LogicalExpr),
+    Set(SetExpr),
     Unary(UnaryExpr),
     Ternary(TernaryExpr),
     Variable(VariableExpr),
@@ -79,6 +81,14 @@ pub struct LogicalExpr {
 }
 
 #[derive(Debug, Clone)]
+pub struct SetExpr {
+    pub uid: usize,
+    pub object: Box<Expr>,
+    pub name: Token,
+    pub value: Box<Expr>,
+}
+
+#[derive(Debug, Clone)]
 pub struct UnaryExpr {
     pub uid: usize,
     pub operator: Token,
@@ -109,6 +119,7 @@ impl Expr {
             Expr::Grouping(grouping_expr) => visitor.visit_grouping_expr(grouping_expr),
             Expr::Literal(literal_expr) => visitor.visit_literal_expr(literal_expr),
             Expr::Logical(logical_expr) => visitor.visit_logical_expr(logical_expr),
+            Expr::Set(set_expr) => visitor.visit_set_expr(set_expr),
             Expr::Unary(unary_expr) => visitor.visit_unary_expr(unary_expr),
             Expr::Ternary(ternary_expr) => visitor.visit_ternary_expr(ternary_expr),
             Expr::Variable(variable_expr) => visitor.visit_variable_expr(variable_expr),
@@ -123,6 +134,7 @@ impl Expr {
             Expr::Grouping(expr) => expr.uid,
             Expr::Literal(expr) => expr.uid,
             Expr::Logical(expr) => expr.uid,
+            Expr::Set(expr) => expr.uid,
             Expr::Unary(expr) => expr.uid,
             Expr::Ternary(expr) => expr.uid,
             Expr::Variable(expr) => expr.uid,

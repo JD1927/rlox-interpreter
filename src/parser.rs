@@ -309,6 +309,13 @@ impl Parser {
                     value: Box::new(value),
                     uid: next_uid(),
                 }));
+            } else if let Expr::Get(get) = expr {
+                return Ok(Expr::Set(SetExpr {
+                    uid: next_uid(),
+                    object: get.object,
+                    name: get.name,
+                    value: Box::new(value),
+                }));
             }
             return Err(LoxErrorResult::parse_error(
                 equals,

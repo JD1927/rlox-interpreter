@@ -32,8 +32,7 @@ impl LoxCallable for LoxClass {
         _interpreter: &mut Interpreter,
         _arguments: Vec<Object>,
     ) -> Result<Object, LoxErrorResult> {
-        let lox_instance = LoxInstance::new(self.clone());
-        Ok(Object::ClassInstance(lox_instance))
+        Ok(Object::ClassInstance(LoxInstance::new(self.clone())))
     }
 
     fn check_arity(&self, args_len: usize, current_token: &Token) -> Result<(), LoxErrorResult> {
