@@ -71,6 +71,10 @@ impl ExprVisitor<String> for AstPrinter {
     fn visit_call_expr(&mut self, expr: &CallExpr) -> String {
         todo!()
     }
+
+    fn visit_get_expr(&mut self, expr: &GetExpr) -> String {
+        todo!()
+    }
 }
 
 #[cfg(test)]

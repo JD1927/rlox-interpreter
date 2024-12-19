@@ -348,13 +348,25 @@ impl ExprVisitor<Result<Object, LoxErrorResult>> for Interpreter {
                 native_function.check_arity(arguments.len(), &expr.paren)?;
                 native_function.call(self, arguments)
             }
-            Object::Class(mut native_function) => {
-                native_function.check_arity(arguments.len(), &expr.paren)?;
-                native_function.call(self, arguments)
+            Object::Class(mut class) => {
+                class.check_arity(arguments.len(), &expr.paren)?;
+                class.call(self, arguments)
             }
             _ => Err(LoxErrorResult::interpreter_error(
                 expr.paren.line,
                 "Can only call functions and classes.",
+            )),
+        }
+    }
+
+    fn visit_get_expr(&mut self, expr: &GetExpr) -> Result<Object, LoxErrorResult> {
+        let object = self.evaluate(&expr.object)?;
+
+        match object {
+            Object::ClassInstance(instance) => Ok(instance.get(&expr.name)?),
+            _ => Err(LoxErrorResult::interpreter_error(
+                expr.name.line,
+                "Only instances have properties.",
             )),
         }
     }

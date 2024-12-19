@@ -36,6 +36,7 @@ fn main() -> io::Result<()> {
                     "Assign   : usize uid, Token name, Box<Expr> value".to_string(),
                     "Binary   : usize uid, Box<Expr> left, Token operator, Box<Expr> right".to_string(),
                     "Call     : usize uid, Box<Expr> callee, Token paren, Vec<Expr> arguments".to_string(),
+                    "Get      : usize uid, Box<Expr> object, Token name".to_string(),
                     "Grouping : usize uid, Box<Expr> expression".to_string(),
                     "Literal  : usize uid, Object value".to_string(),
                     "Logical  : usize uid, Box<Expr> left, Token operator, Box<Expr> right".to_string(),

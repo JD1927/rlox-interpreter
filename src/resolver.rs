@@ -257,4 +257,8 @@ impl ExprVisitor<()> for Resolver<'_> {
 
         self.resolve_local(&Expr::Variable(expr.clone()), &expr.name);
     }
+
+    fn visit_get_expr(&mut self, expr: &GetExpr) {
+        self.resolve_expr(&Expr::Get(expr.clone()));
+    }
 }
