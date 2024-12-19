@@ -12,5 +12,4 @@ pub trait LoxCallable {
         arguments_len: usize,
         current_token: &Token,
     ) -> Result<(), LoxErrorResult>;
-    fn to_string(&self) -> String;
 }

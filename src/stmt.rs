@@ -4,6 +4,7 @@ use crate::expr::*;
 
 pub trait StmtVisitor<T> {
     fn visit_block_stmt(&mut self, stmt: &BlockStmt) -> T;
+    fn visit_class_stmt(&mut self, stmt: &ClassStmt) -> T;
     fn visit_expression_stmt(&mut self, stmt: &ExpressionStmt) -> T;
     fn visit_function_stmt(&mut self, stmt: &FunctionStmt) -> T;
     fn visit_if_stmt(&mut self, stmt: &IfStmt) -> T;
@@ -16,6 +17,7 @@ pub trait StmtVisitor<T> {
 #[derive(Debug, Clone)]
 pub enum Stmt {
     Block(BlockStmt),
+    Class(ClassStmt),
     Expression(ExpressionStmt),
     Function(FunctionStmt),
     If(IfStmt),
@@ -29,6 +31,12 @@ pub enum Stmt {
 #[derive(Debug, Clone)]
 pub struct BlockStmt {
     pub statements: Vec<Stmt>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ClassStmt {
+    pub name: Token,
+    pub methods: Vec<Stmt>,
 }
 
 #[derive(Debug, Clone)]
@@ -82,6 +90,7 @@ impl Stmt {
     pub fn accept<T>(&self, visitor: &mut dyn StmtVisitor<T>) -> T {
         match self {
             Stmt::Block(block_stmt) => visitor.visit_block_stmt(block_stmt),
+            Stmt::Class(class_stmt) => visitor.visit_class_stmt(class_stmt),
             Stmt::Expression(expression_stmt) => visitor.visit_expression_stmt(expression_stmt),
             Stmt::Function(function_stmt) => visitor.visit_function_stmt(function_stmt),
             Stmt::If(if_stmt) => visitor.visit_if_stmt(if_stmt),

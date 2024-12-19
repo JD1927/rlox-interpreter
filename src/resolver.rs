@@ -195,6 +195,11 @@ impl StmtVisitor<()> for Resolver<'_> {
             self.had_error = true;
         }
     }
+
+    fn visit_class_stmt(&mut self, stmt: &ClassStmt) {
+        self.declare(&stmt.name);
+        self.define(&stmt.name);
+    }
 }
 
 impl ExprVisitor<()> for Resolver<'_> {

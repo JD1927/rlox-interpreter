@@ -16,6 +16,7 @@ fn main() -> io::Result<()> {
                 "Stmt".to_string(),
                 &[
                     "Block      : Vec<Stmt> statements".to_string(),
+                    "Class      : Token name, Vec<Stmt> methods".to_string(),
                     "Expression : Box<Expr> expression".to_string(),
                     "Function   : Token name, Vec<Token> params, Vec<Stmt> body".to_string(),
                     "If         : Box<Expr> condition, Box<Stmt> then_branch, Option<Box<Stmt>> else_branch"

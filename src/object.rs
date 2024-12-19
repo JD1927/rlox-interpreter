@@ -1,7 +1,8 @@
 use std::{cmp::Ordering, fmt, ops::*};
 
 use crate::{
-    lox_callable::LoxCallable, lox_function::LoxFunction, lox_native_function::NativeFunction,
+    lox_callable::LoxCallable, lox_class::LoxClass, lox_function::LoxFunction,
+    lox_native_function::LoxNativeFunction,
 };
 
 #[derive(Debug, Clone)]
@@ -10,7 +11,8 @@ pub enum Object {
     Number(f64),
     Bool(bool),
     Function(LoxFunction),
-    NativeFunction(NativeFunction),
+    NativeFunction(LoxNativeFunction),
+    Class(LoxClass),
     Nil,
 }
 
@@ -21,8 +23,9 @@ impl fmt::Display for Object {
             Object::String(val) => write!(f, "\"{val}\""),
             Object::Bool(val) => write!(f, "{val}"),
             Object::Nil => write!(f, "nil"),
-            Object::Function(function) => write!(f, "{}", function.to_string()),
-            Object::NativeFunction(native_function) => write!(f, "{}", native_function.to_string()),
+            Object::Function(function) => write!(f, "{}", function),
+            Object::NativeFunction(native_function) => write!(f, "{}", native_function),
+            Object::Class(lox_class) => write!(f, "{}", lox_class),
         }
     }
 }

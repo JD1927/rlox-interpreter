@@ -4,6 +4,7 @@ mod error;
 mod expr;
 mod interpreter;
 mod lox_callable;
+mod lox_class;
 mod lox_function;
 mod lox_native_function;
 mod object;

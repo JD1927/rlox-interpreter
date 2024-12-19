@@ -5,8 +5,8 @@ use std::{
 };
 
 use crate::{
-    environment::*, error::*, expr::*, lox_callable::*, lox_function::LoxFunction,
-    lox_native_function::*, object::*, stmt::*, token::*,
+    environment::*, error::*, expr::*, lox_callable::*, lox_class::LoxClass,
+    lox_function::LoxFunction, lox_native_function::*, object::*, stmt::*, token::*,
 };
 
 #[derive(Debug, Clone)]
@@ -21,7 +21,7 @@ impl Interpreter {
         let globals = Environment::new();
         globals.borrow_mut().define(
             "clock".to_string(),
-            Object::NativeFunction(NativeFunction {
+            Object::NativeFunction(LoxNativeFunction {
                 name: "clock".to_string(),
                 arity: 0,
                 callable: |_, _| match SystemTime::now().duration_since(UNIX_EPOCH) {
@@ -177,6 +177,17 @@ impl StmtVisitor<Result<(), LoxErrorResult>> for Interpreter {
             Object::Nil
         };
         Err(LoxErrorResult::return_signal(return_value))
+    }
+
+    fn visit_class_stmt(&mut self, stmt: &ClassStmt) -> Result<(), LoxErrorResult> {
+        self.environment
+            .borrow_mut()
+            .define(stmt.name.lexeme(), Object::Nil);
+        let class = LoxClass::new(stmt.name.lexeme());
+        self.environment
+            .borrow_mut()
+            .assign(&stmt.name, Object::Class(class))?;
+        Ok(())
     }
 }
 

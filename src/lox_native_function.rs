@@ -1,15 +1,17 @@
+use std::fmt::{self, Display, Formatter};
+
 use crate::{
     error::*, interpreter::Interpreter, lox_callable::LoxCallable, object::Object, token::Token,
 };
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct NativeFunction {
+pub struct LoxNativeFunction {
     pub name: String,
     pub arity: usize,
     pub callable: fn(&mut Interpreter, Vec<Object>) -> Result<Object, LoxErrorResult>,
 }
 
-impl LoxCallable for NativeFunction {
+impl LoxCallable for LoxNativeFunction {
     fn call(
         &mut self,
         interpreter: &mut Interpreter,
@@ -31,8 +33,10 @@ impl LoxCallable for NativeFunction {
         }
         Ok(())
     }
+}
 
-    fn to_string(&self) -> String {
-        format!("<fn native {}>", &self.name)
+impl Display for LoxNativeFunction {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "<fn native {}>", self.name)
     }
 }

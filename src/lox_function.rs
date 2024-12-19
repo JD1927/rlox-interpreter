@@ -1,3 +1,4 @@
+use std::fmt::{self, Display, Formatter};
 use std::rc::Rc;
 
 use crate::{
@@ -52,8 +53,10 @@ impl LoxCallable for LoxFunction {
         }
         Ok(())
     }
+}
 
-    fn to_string(&self) -> String {
-        format!("<fn {}>", &self.declaration.name.lexeme)
+impl Display for LoxFunction {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "<fn {}>", &self.declaration.name.lexeme)
     }
 }

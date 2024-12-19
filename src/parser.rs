@@ -36,7 +36,9 @@ impl Parser {
     }
 
     fn declaration(&mut self) -> Option<Stmt> {
-        let declaration = if self.matches(&[TokenType::Fun]) {
+        let declaration = if self.matches(&[TokenType::Class]) {
+            self.class_declaration()
+        } else if self.matches(&[TokenType::Fun]) {
             self.function_declaration("function")
         } else if self.matches(&[TokenType::Var]) {
             self.var_declaration()
@@ -53,6 +55,20 @@ impl Parser {
                 None
             }
         }
+    }
+
+    fn class_declaration(&mut self) -> Result<Stmt, LoxErrorResult> {
+        let name = self.consume(TokenType::Identifier, "Expect class name.")?;
+        self.consume(TokenType::LeftBrace, "Expect '{{' before class body.")?;
+
+        let mut methods: Vec<Stmt> = Vec::new();
+        while !self.check(&TokenType::RightBrace) && !self.is_at_end() {
+            methods.push(self.function_declaration("method")?);
+        }
+
+        self.consume(TokenType::RightBrace, "Expect '}}' after class body.")?;
+
+        Ok(Stmt::Class(ClassStmt { name, methods }))
     }
 
     fn function_declaration(&mut self, kind: &str) -> Result<Stmt, LoxErrorResult> {
