@@ -10,13 +10,19 @@ use crate::{
 pub struct LoxFunction {
     declaration: Box<FunctionStmt>,
     closure: EnvironmentRef,
+    is_initializer: bool,
 }
 
 impl LoxFunction {
-    pub fn new(declaration: &FunctionStmt, closure: EnvironmentRef) -> LoxFunction {
+    pub fn new(
+        declaration: &FunctionStmt,
+        closure: EnvironmentRef,
+        is_initializer: bool,
+    ) -> LoxFunction {
         LoxFunction {
             declaration: Box::new(declaration.clone()),
             closure,
+            is_initializer,
         }
     }
 
@@ -30,6 +36,7 @@ impl LoxFunction {
         LoxFunction {
             declaration: self.declaration.clone(),
             closure: environment,
+            is_initializer: self.is_initializer,
         }
     }
 }
@@ -46,9 +53,22 @@ impl LoxCallable for LoxFunction {
                 .borrow_mut()
                 .define(param.lexeme.clone(), arguments[idx].clone());
         }
+
+        let this = Token::new(TokenType::This, "this".to_string(), Object::Nil, 0);
+
         match interpreter.execute_block(&self.declaration.body, environment) {
-            Ok(_) => Ok(Object::Nil),
-            Err(LoxErrorResult::ControlFlowReturn { value }) => Ok(value),
+            Ok(_) => {
+                if self.is_initializer {
+                    self.closure.borrow().get_at(0, &this)?;
+                }
+                Ok(Object::Nil)
+            }
+            Err(LoxErrorResult::ControlFlowReturn { value }) => {
+                if self.is_initializer {
+                    self.closure.borrow().get_at(0, &this)?;
+                }
+                Ok(value)
+            }
             Err(err) => Err(err),
         }
     }

@@ -40,15 +40,25 @@ impl Display for LoxClass {
 
 impl LoxCallable for LoxClass {
     fn arity(&self) -> usize {
-        0
+        if let Some(initializer) = self.find_method("init") {
+            initializer.arity()
+        } else {
+            0
+        }
     }
 
     fn call(
         &mut self,
-        _interpreter: &mut Interpreter,
-        _arguments: Vec<Object>,
+        interpreter: &mut Interpreter,
+        arguments: Vec<Object>,
     ) -> Result<Object, LoxErrorResult> {
-        Ok(Object::ClassInstance(LoxInstance::new(self.clone())))
+        let instance = LoxInstance::new(self.clone());
+        if let Some(initializer) = self.find_method("init") {
+            initializer
+                .bind(instance.clone())
+                .call(interpreter, arguments)?;
+        }
+        Ok(Object::ClassInstance(instance))
     }
 
     fn check_arity(&self, args_len: usize, current_token: &Token) -> Result<(), LoxErrorResult> {

@@ -163,7 +163,7 @@ impl StmtVisitor<Result<(), LoxErrorResult>> for Interpreter {
     }
 
     fn visit_function_stmt(&mut self, stmt: &FunctionStmt) -> Result<(), LoxErrorResult> {
-        let function = LoxFunction::new(stmt, Rc::clone(&self.environment));
+        let function = LoxFunction::new(stmt, Rc::clone(&self.environment), false);
         self.environment
             .borrow_mut()
             .define(stmt.name.lexeme(), Object::Function(function));
@@ -189,7 +189,11 @@ impl StmtVisitor<Result<(), LoxErrorResult>> for Interpreter {
         for stmt in &stmt.methods {
             match stmt {
                 Stmt::Function(method) => {
-                    let function = LoxFunction::new(method, self.environment.clone());
+                    let function = LoxFunction::new(
+                        method,
+                        self.environment.clone(),
+                        method.name.lexeme.eq("init"),
+                    );
                     methods.insert(method.name.lexeme(), function);
                 }
                 _ => panic!("Not a method!"),
