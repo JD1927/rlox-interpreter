@@ -6,11 +6,11 @@ use crate::{error::*, expr::*, interpreter::*, stmt::*, token::Token};
 pub struct VariableInfo {
     is_defined: bool,
     is_used: bool,
-    token: Token,
+    token: Option<Token>,
 }
 
 impl VariableInfo {
-    pub fn new(is_defined: bool, is_used: bool, token: Token) -> VariableInfo {
+    pub fn new(is_defined: bool, is_used: bool, token: Option<Token>) -> VariableInfo {
         VariableInfo {
             is_defined,
             is_used,
@@ -26,11 +26,18 @@ pub enum FunctionType {
     Method,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ClassType {
+    None,
+    Class,
+}
+
 pub struct Resolver<'a> {
     pub interpreter: &'a mut Interpreter,
     pub scopes: Vec<HashMap<String, VariableInfo>>,
     pub had_error: bool,
     current_function: FunctionType,
+    current_class: ClassType,
     in_loop: bool,
 }
 
@@ -40,6 +47,7 @@ impl Resolver<'_> {
             interpreter,
             scopes: Vec::new(),
             current_function: FunctionType::None,
+            current_class: ClassType::None,
             had_error: false,
             in_loop: false,
         }
@@ -67,10 +75,9 @@ impl Resolver<'_> {
         if let Some(scope) = self.scopes.pop() {
             for (_, variable_info) in scope {
                 if !variable_info.is_used {
-                    LoxErrorResult::warning(
-                        variable_info.token,
-                        "Variable is declared but never used.",
-                    );
+                    if let Some(token) = variable_info.token {
+                        LoxErrorResult::warning(token, "Variable is declared but never used.");
+                    }
                 }
             }
         }
@@ -85,7 +92,10 @@ impl Resolver<'_> {
                 );
                 self.had_error = true;
             }
-            scope.insert(name.lexeme(), VariableInfo::new(false, false, name.clone()));
+            scope.insert(
+                name.lexeme(),
+                VariableInfo::new(false, false, Some(name.clone())),
+            );
         }
     }
 
@@ -198,8 +208,17 @@ impl StmtVisitor<()> for Resolver<'_> {
     }
 
     fn visit_class_stmt(&mut self, stmt: &ClassStmt) {
+        let enclosing_class = self.current_class.clone();
+        self.current_class = ClassType::Class;
+
         self.declare(&stmt.name);
         self.define(&stmt.name);
+
+        self.begin_scope();
+
+        if let Some(scope) = self.scopes.last_mut() {
+            scope.insert("this".to_string(), VariableInfo::new(true, false, None));
+        }
 
         for stmt in &stmt.methods {
             match stmt {
@@ -210,6 +229,10 @@ impl StmtVisitor<()> for Resolver<'_> {
                 _ => panic!("Not a method!"),
             }
         }
+
+        self.current_class = enclosing_class;
+
+        self.end_scope();
     }
 }
 
@@ -276,5 +299,17 @@ impl ExprVisitor<()> for Resolver<'_> {
     fn visit_set_expr(&mut self, expr: &SetExpr) {
         self.resolve_expr(&expr.value);
         self.resolve_expr(&expr.object);
+    }
+
+    fn visit_this_expr(&mut self, expr: &ThisExpr) {
+        if self.current_class == ClassType::None {
+            LoxErrorResult::resolver_error(
+                expr.keyword.clone(),
+                "Cannot use 'this' outside of a class",
+            );
+            self.had_error = true;
+            return;
+        }
+        self.resolve_local(&Expr::This(expr.clone()), &expr.keyword);
     }
 }

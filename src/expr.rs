@@ -11,6 +11,7 @@ pub trait ExprVisitor<T> {
     fn visit_literal_expr(&mut self, expr: &LiteralExpr) -> T;
     fn visit_logical_expr(&mut self, expr: &LogicalExpr) -> T;
     fn visit_set_expr(&mut self, expr: &SetExpr) -> T;
+    fn visit_this_expr(&mut self, expr: &ThisExpr) -> T;
     fn visit_unary_expr(&mut self, expr: &UnaryExpr) -> T;
     fn visit_ternary_expr(&mut self, expr: &TernaryExpr) -> T;
     fn visit_variable_expr(&mut self, expr: &VariableExpr) -> T;
@@ -25,6 +26,7 @@ pub enum Expr {
     Literal(LiteralExpr),
     Logical(LogicalExpr),
     Set(SetExpr),
+    This(ThisExpr),
     Unary(UnaryExpr),
     Ternary(TernaryExpr),
     Variable(VariableExpr),
@@ -89,6 +91,12 @@ pub struct SetExpr {
 }
 
 #[derive(Debug, Clone)]
+pub struct ThisExpr {
+    pub uid: usize,
+    pub keyword: Token,
+}
+
+#[derive(Debug, Clone)]
 pub struct UnaryExpr {
     pub uid: usize,
     pub operator: Token,
@@ -120,6 +128,7 @@ impl Expr {
             Expr::Literal(literal_expr) => visitor.visit_literal_expr(literal_expr),
             Expr::Logical(logical_expr) => visitor.visit_logical_expr(logical_expr),
             Expr::Set(set_expr) => visitor.visit_set_expr(set_expr),
+            Expr::This(this_expr) => visitor.visit_this_expr(this_expr),
             Expr::Unary(unary_expr) => visitor.visit_unary_expr(unary_expr),
             Expr::Ternary(ternary_expr) => visitor.visit_ternary_expr(ternary_expr),
             Expr::Variable(variable_expr) => visitor.visit_variable_expr(variable_expr),
@@ -135,6 +144,7 @@ impl Expr {
             Expr::Literal(expr) => expr.uid,
             Expr::Logical(expr) => expr.uid,
             Expr::Set(expr) => expr.uid,
+            Expr::This(expr) => expr.uid,
             Expr::Unary(expr) => expr.uid,
             Expr::Ternary(expr) => expr.uid,
             Expr::Variable(expr) => expr.uid,

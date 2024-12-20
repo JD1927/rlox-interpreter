@@ -22,13 +22,13 @@ impl LoxInstance {
         }))
     }
 
-    pub fn get(&self, name: &Token) -> Result<Object, LoxErrorResult> {
+    pub fn get(&self, name: &Token, instance: LoxInstanceRef) -> Result<Object, LoxErrorResult> {
         if let Some(result) = self.fields.get(&name.lexeme) {
             return Ok(result.clone());
         }
 
-        if let Some(function) = self.class.find_method(&name.lexeme) {
-            return Ok(Object::Function(function));
+        if let Some(method) = self.class.find_method(&name.lexeme) {
+            return Ok(Object::Function(method.bind(instance)));
         }
 
         Err(LoxErrorResult::interpreter_error(

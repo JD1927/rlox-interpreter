@@ -376,7 +376,9 @@ impl ExprVisitor<Result<Object, LoxErrorResult>> for Interpreter {
         let object = self.evaluate(&expr.object)?;
 
         match object {
-            Object::ClassInstance(instance) => Ok(instance.borrow().get(&expr.name)?),
+            Object::ClassInstance(instance) => {
+                Ok(instance.borrow().get(&expr.name, instance.clone())?)
+            }
             _ => Err(LoxErrorResult::interpreter_error(
                 expr.name.line,
                 "Only instances have properties.",
@@ -398,6 +400,10 @@ impl ExprVisitor<Result<Object, LoxErrorResult>> for Interpreter {
                 "Only instances have fields.",
             )),
         }
+    }
+
+    fn visit_this_expr(&mut self, expr: &ThisExpr) -> Result<Object, LoxErrorResult> {
+        self.look_up_variable(&expr.keyword, &Expr::This(expr.clone()))
     }
 }
 

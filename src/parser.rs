@@ -543,6 +543,14 @@ impl Parser {
             }));
         }
 
+        if self.matches(&[TokenType::This]) {
+            let keyword = self.previous();
+            return Ok(Expr::This(ThisExpr {
+                keyword,
+                uid: next_uid(),
+            }));
+        }
+
         if self.matches(&[TokenType::Identifier]) {
             let name = self.previous();
             return Ok(Expr::Variable(VariableExpr {

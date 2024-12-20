@@ -1,9 +1,9 @@
 use std::fmt::{self, Display, Formatter};
 use std::rc::Rc;
 
+use crate::lox_instance::*;
 use crate::{
-    environment::*, error::*, interpreter::Interpreter, lox_callable::*, object::Object, stmt::*,
-    token::Token,
+    environment::*, error::*, interpreter::*, lox_callable::*, object::*, stmt::*, token::*,
 };
 
 #[derive(Debug, Clone)]
@@ -13,10 +13,23 @@ pub struct LoxFunction {
 }
 
 impl LoxFunction {
-    pub fn new(declaration: &FunctionStmt, closure: EnvironmentRef) -> Self {
+    pub fn new(declaration: &FunctionStmt, closure: EnvironmentRef) -> LoxFunction {
         LoxFunction {
             declaration: Box::new(declaration.clone()),
             closure,
+        }
+    }
+
+    pub fn bind(&self, instance: LoxInstanceRef) -> LoxFunction {
+        let environment = Environment::new_enclosing(self.closure.clone());
+
+        environment
+            .borrow_mut()
+            .define("this".to_string(), Object::ClassInstance(instance));
+
+        LoxFunction {
+            declaration: self.declaration.clone(),
+            closure: environment,
         }
     }
 }
