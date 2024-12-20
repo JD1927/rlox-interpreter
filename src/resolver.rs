@@ -222,6 +222,20 @@ impl StmtVisitor<()> for Resolver<'_> {
         self.declare(&stmt.name);
         self.define(&stmt.name);
 
+        if let Some(super_class) = &stmt.super_class {
+            if let Expr::Variable(VariableExpr { name, .. }) = &*super_class.clone() {
+                if stmt.name.lexeme.eq(name.lexeme.as_str()) {
+                    LoxErrorResult::resolver_error(
+                        stmt.name.clone(),
+                        "A class cannot inherit from itself.",
+                    );
+                    self.had_error = true;
+                }
+            }
+
+            self.resolve_expr(super_class);
+        }
+
         self.begin_scope();
 
         if let Some(scope) = self.scopes.last_mut() {

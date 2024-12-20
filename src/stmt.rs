@@ -36,6 +36,7 @@ pub struct BlockStmt {
 #[derive(Debug, Clone)]
 pub struct ClassStmt {
     pub name: Token,
+    pub super_class: Option<Box<Expr>>,
     pub methods: Vec<Stmt>,
 }
 

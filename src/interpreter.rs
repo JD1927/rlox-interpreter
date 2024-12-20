@@ -93,6 +93,21 @@ impl Interpreter {
             self.globals.borrow().get(name)
         }
     }
+
+    fn evaluate_super_class(
+        &mut self,
+        super_class_expr: &Expr,
+        name: &Token,
+    ) -> Result<LoxClass, LoxErrorResult> {
+        let variable_expr = self.evaluate(super_class_expr)?;
+        match variable_expr {
+            Object::Class(lox_class) => Ok(lox_class),
+            _ => Err(LoxErrorResult::interpreter_error(
+                name.line,
+                "Superclass must be a class.",
+            )),
+        }
+    }
 }
 
 impl StmtVisitor<Result<(), LoxErrorResult>> for Interpreter {
@@ -180,6 +195,11 @@ impl StmtVisitor<Result<(), LoxErrorResult>> for Interpreter {
     }
 
     fn visit_class_stmt(&mut self, stmt: &ClassStmt) -> Result<(), LoxErrorResult> {
+        let super_class: Option<Box<LoxClass>> = match stmt.super_class.clone() {
+            Some(expr) => Some(Box::new(self.evaluate_super_class(&expr, &stmt.name)?)),
+            None => None,
+        };
+
         self.environment
             .borrow_mut()
             .define(stmt.name.lexeme(), Object::Nil);
@@ -200,7 +220,7 @@ impl StmtVisitor<Result<(), LoxErrorResult>> for Interpreter {
             }
         }
 
-        let class = LoxClass::new(stmt.name.lexeme(), methods);
+        let class = LoxClass::new(stmt.name.lexeme(), super_class, methods);
         self.environment
             .borrow_mut()
             .assign(&stmt.name, Object::Class(class))?;

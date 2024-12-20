@@ -59,6 +59,17 @@ impl Parser {
 
     fn class_declaration(&mut self) -> Result<Stmt, LoxErrorResult> {
         let name = self.consume(TokenType::Identifier, "Expect class name.")?;
+
+        let super_class = if self.matches(&[TokenType::Less]) {
+            self.consume(TokenType::Identifier, "Expect superclass name.")?;
+            Some(Box::new(Expr::Variable(VariableExpr {
+                uid: next_uid(),
+                name: self.previous(),
+            })))
+        } else {
+            None
+        };
+
         self.consume(TokenType::LeftBrace, "Expect '{{' before class body.")?;
 
         let mut methods: Vec<Stmt> = Vec::new();
@@ -68,7 +79,11 @@ impl Parser {
 
         self.consume(TokenType::RightBrace, "Expect '}}' after class body.")?;
 
-        Ok(Stmt::Class(ClassStmt { name, methods }))
+        Ok(Stmt::Class(ClassStmt {
+            name,
+            methods,
+            super_class,
+        }))
     }
 
     fn function_declaration(&mut self, kind: &str) -> Result<Stmt, LoxErrorResult> {

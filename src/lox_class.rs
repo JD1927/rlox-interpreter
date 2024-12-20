@@ -11,12 +11,21 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct LoxClass {
     pub name: String,
+    pub super_class: Option<Box<LoxClass>>,
     pub methods: HashMap<String, LoxFunction>,
 }
 
 impl LoxClass {
-    pub fn new(name: String, methods: HashMap<String, LoxFunction>) -> LoxClass {
-        LoxClass { name, methods }
+    pub fn new(
+        name: String,
+        super_class: Option<Box<LoxClass>>,
+        methods: HashMap<String, LoxFunction>,
+    ) -> LoxClass {
+        LoxClass {
+            name,
+            super_class,
+            methods,
+        }
     }
     pub fn find_method(&self, name: &str) -> Option<LoxFunction> {
         self.methods.get(name).cloned()
