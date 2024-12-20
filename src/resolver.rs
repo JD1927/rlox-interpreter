@@ -24,6 +24,7 @@ pub enum FunctionType {
     None,
     Function,
     Method,
+    Initializer,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -177,6 +178,13 @@ impl StmtVisitor<()> for Resolver<'_> {
             self.had_error = true;
         }
         if let Some(value) = &stmt.value {
+            if self.current_function == FunctionType::Initializer {
+                LoxErrorResult::resolver_error(
+                    stmt.keyword.clone(),
+                    "Cannot return a value from an initializer.",
+                );
+                self.had_error = true;
+            }
             self.resolve_expr(value);
         }
     }
@@ -223,7 +231,11 @@ impl StmtVisitor<()> for Resolver<'_> {
         for stmt in &stmt.methods {
             match stmt {
                 Stmt::Function(method) => {
-                    let declaration = FunctionType::Method;
+                    let declaration = if method.name.lexeme.eq("init") {
+                        FunctionType::Initializer
+                    } else {
+                        FunctionType::Method
+                    };
                     self.resolve_function(method, declaration);
                 }
                 _ => panic!("Not a method!"),
