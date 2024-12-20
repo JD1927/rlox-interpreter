@@ -25,7 +25,16 @@ impl LoxClass {
 
 impl Display for LoxClass {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "<class {}>", self.name)
+        let mut methods = Vec::new();
+        for method in self.methods.keys() {
+            methods.push(method.as_str());
+        }
+        write!(
+            f,
+            "<class {}> {{ methods: {{ {} }} }}>",
+            self.name,
+            methods.join(", ")
+        )
     }
 }
 

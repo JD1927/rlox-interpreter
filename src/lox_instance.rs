@@ -44,6 +44,20 @@ impl LoxInstance {
 
 impl Display for LoxInstance {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "<class {} instance>", &self.class.name)
+        let mut fields = Vec::new();
+        for field in self.fields.keys() {
+            fields.push(field.as_str());
+        }
+        let mut methods = Vec::new();
+        for method in self.class.methods.keys() {
+            methods.push(method.as_str());
+        }
+        write!(
+            f,
+            "<{} instance> {{ props: {{ {} }}, methods: {{ {} }} }}>",
+            &self.class.name,
+            fields.join(", "),
+            methods.join(", ")
+        )
     }
 }

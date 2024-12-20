@@ -37,6 +37,6 @@ impl LoxCallable for LoxNativeFunction {
 
 impl Display for LoxNativeFunction {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "<fn native {}>", self.name)
+        write!(f, "<fun native {}>", self.name)
     }
 }

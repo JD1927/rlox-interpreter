@@ -1,4 +1,8 @@
-class Bagel {}
+class Bagel {
+    great() {
+        print "great Bagel";
+    }
+}
 var bagel1 = Bagel();
 var bagel2 = Bagel();
 bagel1.value = 3;
