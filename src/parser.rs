@@ -558,6 +558,17 @@ impl Parser {
             }));
         }
 
+        if self.matches(&[TokenType::Super]) {
+            let keyword = self.previous();
+            self.consume(TokenType::Dot, "Expect '.' after super.")?;
+            let method = self.consume(TokenType::Identifier, "Expect super class method name.")?;
+            return Ok(Expr::Super(SuperExpr {
+                uid: next_uid(),
+                keyword,
+                method,
+            }));
+        }
+
         if self.matches(&[TokenType::This]) {
             let keyword = self.previous();
             return Ok(Expr::This(ThisExpr {

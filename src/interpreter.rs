@@ -204,6 +204,13 @@ impl StmtVisitor<Result<(), LoxErrorResult>> for Interpreter {
             .borrow_mut()
             .define(stmt.name.lexeme(), Object::Nil);
 
+        if let Some(class) = super_class.clone() {
+            self.environment = Environment::new_enclosing(self.environment.clone());
+            self.environment
+                .borrow_mut()
+                .define("super".to_string(), Object::Class(*class));
+        }
+
         let mut methods: HashMap<String, LoxFunction> = HashMap::new();
 
         for stmt in &stmt.methods {
@@ -220,7 +227,14 @@ impl StmtVisitor<Result<(), LoxErrorResult>> for Interpreter {
             }
         }
 
-        let class = LoxClass::new(stmt.name.lexeme(), super_class, methods);
+        let class = LoxClass::new(stmt.name.lexeme(), super_class.clone(), methods);
+
+        if super_class.is_some() {
+            if let Some(previous_environment) = &self.environment.clone().borrow().enclosing {
+                self.environment = previous_environment.clone();
+            }
+        }
+
         self.environment
             .borrow_mut()
             .assign(&stmt.name, Object::Class(class))?;
@@ -428,6 +442,39 @@ impl ExprVisitor<Result<Object, LoxErrorResult>> for Interpreter {
 
     fn visit_this_expr(&mut self, expr: &ThisExpr) -> Result<Object, LoxErrorResult> {
         self.look_up_variable(&expr.keyword, &Expr::This(expr.clone()))
+    }
+
+    fn visit_super_expr(&mut self, expr: &SuperExpr) -> Result<Object, LoxErrorResult> {
+        let super_token = Token::new(TokenType::Super, "super".to_string(), Object::Nil, 0);
+        let this_token = Token::new(TokenType::This, "this".to_string(), Object::Nil, 0);
+
+        let distance = self
+            .locals
+            .get(&Expr::Super(expr.clone()))
+            .expect("Super class has to be resolved");
+
+        let super_class = match self.environment.borrow().get_at(*distance, &super_token)? {
+            Object::Class(super_class) => super_class,
+            _ => panic!("Expected 'object' to be a 'super' class!"),
+        };
+
+        // the instance is always right inside where the super class is stored
+        let instance = match self
+            .environment
+            .borrow()
+            .get_at(*distance - 1, &this_token)?
+        {
+            Object::ClassInstance(instance) => instance,
+            _ => panic!("Expected 'object' to be a class instance!"),
+        };
+
+        match super_class.find_method(&expr.method.lexeme) {
+            Some(method) => Ok(Object::Function(method.bind(instance))),
+            None => Err(LoxErrorResult::interpreter_error(
+                expr.method.line,
+                &format!("Undefined property '{}'.", expr.method.lexeme),
+            )),
+        }
     }
 }
 

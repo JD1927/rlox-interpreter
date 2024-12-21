@@ -83,6 +83,10 @@ impl ExprVisitor<String> for AstPrinter {
     fn visit_this_expr(&mut self, expr: &ThisExpr) -> String {
         todo!()
     }
+
+    fn visit_super_expr(&mut self, expr: &SuperExpr) -> String {
+        todo!()
+    }
 }
 
 #[cfg(test)]

@@ -31,6 +31,7 @@ pub enum FunctionType {
 pub enum ClassType {
     None,
     Class,
+    Subclass,
 }
 
 pub struct Resolver<'a> {
@@ -73,38 +74,44 @@ impl Resolver<'_> {
     }
 
     fn end_scope(&mut self) {
-        if let Some(scope) = self.scopes.pop() {
-            for (_, variable_info) in scope {
-                if !variable_info.is_used {
-                    if let Some(token) = variable_info.token {
-                        LoxErrorResult::warning(token, "Variable is declared but never used.");
-                    }
+        let scope = match self.scopes.pop() {
+            Some(scope) => scope,
+            _ => panic!("Cannot get a scope from an empty list!"),
+        };
+        for (_, variable_info) in scope {
+            if !variable_info.is_used {
+                if let Some(token) = variable_info.token {
+                    LoxErrorResult::warning(token, "Variable is declared but never used.");
                 }
             }
         }
     }
 
     fn declare(&mut self, name: &Token) {
-        if let Some(scope) = self.scopes.last_mut() {
-            if scope.contains_key(&name.lexeme) {
-                LoxErrorResult::resolver_error(
-                    name.clone(),
-                    "Already a variable with this name in this scope.",
-                );
-                self.had_error = true;
-            }
-            scope.insert(
-                name.lexeme(),
-                VariableInfo::new(false, false, Some(name.clone())),
+        let scope = match self.scopes.last_mut() {
+            Some(scope) => scope,
+            _ => panic!("No 'scope' was found in the list of scopes!"),
+        };
+        if scope.contains_key(&name.lexeme) {
+            LoxErrorResult::resolver_error(
+                name.clone(),
+                "Already a variable with this name in this scope.",
             );
+            self.had_error = true;
         }
+        scope.insert(
+            name.lexeme(),
+            VariableInfo::new(false, false, Some(name.clone())),
+        );
     }
 
     fn define(&mut self, name: &Token) {
-        if let Some(scope) = self.scopes.last_mut() {
-            if let Some(info) = scope.get_mut(&name.lexeme) {
-                info.is_defined = true;
-            }
+        let scope = match self.scopes.last_mut() {
+            Some(scope) => scope,
+            _ => panic!("No 'scope' was found in the list of scopes!"),
+        };
+        if let Some(info) = scope.get_mut(&name.lexeme) {
+            info.is_defined = true;
         }
     }
 
@@ -222,18 +229,32 @@ impl StmtVisitor<()> for Resolver<'_> {
         self.declare(&stmt.name);
         self.define(&stmt.name);
 
-        if let Some(super_class) = &stmt.super_class {
-            if let Expr::Variable(VariableExpr { name, .. }) = &*super_class.clone() {
-                if stmt.name.lexeme.eq(name.lexeme.as_str()) {
-                    LoxErrorResult::resolver_error(
-                        stmt.name.clone(),
-                        "A class cannot inherit from itself.",
-                    );
-                    self.had_error = true;
-                }
+        if let Some(super_class) = &stmt.super_class.clone() {
+            let variable_expr = match &*super_class.clone() {
+                Expr::Variable(variable_expr) => variable_expr.clone(),
+                _ => panic!("Expected a variable expression!"),
+            };
+
+            if stmt.name.lexeme.eq(variable_expr.name.lexeme.as_str()) {
+                LoxErrorResult::resolver_error(
+                    stmt.name.clone(),
+                    "A class cannot inherit from itself.",
+                );
+                self.had_error = true;
             }
 
+            self.current_class = ClassType::Subclass;
+
             self.resolve_expr(super_class);
+
+            self.begin_scope();
+
+            match self.scopes.last_mut() {
+                Some(scope) => {
+                    scope.insert("super".to_string(), VariableInfo::new(true, false, None));
+                }
+                _ => panic!("No 'scope' was found in the list of scopes!"),
+            };
         }
 
         self.begin_scope();
@@ -256,9 +277,13 @@ impl StmtVisitor<()> for Resolver<'_> {
             }
         }
 
-        self.current_class = enclosing_class;
-
         self.end_scope();
+
+        if stmt.super_class.is_some() {
+            self.end_scope();
+        }
+
+        self.current_class = enclosing_class;
     }
 }
 
@@ -303,15 +328,18 @@ impl ExprVisitor<()> for Resolver<'_> {
     }
 
     fn visit_variable_expr(&mut self, expr: &VariableExpr) {
-        if let Some(scope) = self.scopes.last() {
-            if let Some(variable_info) = scope.get(&expr.name.lexeme) {
-                if !variable_info.is_defined {
-                    LoxErrorResult::resolver_error(
-                        expr.name.clone(),
-                        "Cannot read local variable in its own initializer.",
-                    );
-                    self.had_error = true;
-                }
+        let scope = match self.scopes.last() {
+            Some(scope) => scope,
+            _ => panic!("No 'scope' was found in the list of scopes!"),
+        };
+
+        if let Some(variable_info) = scope.get(&expr.name.lexeme) {
+            if !variable_info.is_defined {
+                LoxErrorResult::resolver_error(
+                    expr.name.clone(),
+                    "Cannot read local variable in its own initializer.",
+                );
+                self.had_error = true;
             }
         }
 
@@ -337,5 +365,26 @@ impl ExprVisitor<()> for Resolver<'_> {
             return;
         }
         self.resolve_local(&Expr::This(expr.clone()), &expr.keyword);
+    }
+
+    fn visit_super_expr(&mut self, expr: &SuperExpr) {
+        match self.current_class {
+            ClassType::None => {
+                LoxErrorResult::resolver_error(
+                    expr.keyword.clone(),
+                    "Cannot use 'super' outside of a class.",
+                );
+                self.had_error = true;
+            }
+            ClassType::Class => {
+                LoxErrorResult::resolver_error(
+                    expr.keyword.clone(),
+                    "Cannot use 'super' in a class with no supper class.",
+                );
+                self.had_error = true;
+            }
+            _ => {}
+        }
+        self.resolve_local(&Expr::Super(expr.clone()), &expr.keyword);
     }
 }
